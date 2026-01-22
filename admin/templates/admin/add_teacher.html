@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block title %}Добавить преподавателя{% endblock %}
+{% block content %}
+<h2>Добавить преподавателя</h2>
+<form method="POST" enctype="multipart/form-data" class="admin-form">
+    <div class="form-section">
+        <h3>Данные для входа</h3>
+        <label>Логин: <input type="text" name="login" required placeholder="Напр: ivanov_pro"></label><br>
+        <label>Пароль: <input type="password" name="password" required></label><br>
+    </div>
+    <hr>
+    <div class="form-section">
+        <h3>Личные данные</h3>
+        <label>ФИО: <input type="text" name="name" required></label><br>
+        <label>Предмет: <input type="text" name="subject"></label><br>
+        <label>Кабинет: <input type="text" name="room"></label><br>
+        <label>Контакт: <input type="text" name="contact"></label><br>
+        <label>Аватар: <input type="file" name="avatar" accept="image/*"></label><br>
+
+        <label>Куратор группы:
+            <select name="curator_group_id">
+                <option value="">— Не назначать —</option>
+                {% for g in groups %}
+                    <option value="{{ g.id }}">{{ g.name }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+    </div>
+
+    <button type="submit" class="btn-save">Добавить преподавателя</button>
+</form>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Объявления{% endblock %}
+
+{% block content %}
+<h2>Объявления</h2>
+
+{% if announcements %}
+<div class="announcements-list">
+    {% for a in announcements %}
+    <div class="announcement-card">
+        {% if a.photo_filename %}
+            <img src="{{ url_for('static', filename='announcements/' ~ a.photo_filename) }}" 
+                 alt="Фото объявления" 
+                 style="width:100%; border-radius:8px; margin-bottom:10px;">
+        {% endif %}
+        <div class="announcement-header">
+            <span class="announcement-title">{{ a.title }}</span>
+            <span class="announcement-date">{{ a.created_at.strftime('%d.%m.%Y') }}</span>
+        </div>
+        <div class="announcement-content">
+            {{ a.content }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="no-announcements">Пока нет объявлений.</p>
+{% endif %}
+{% endblock %}

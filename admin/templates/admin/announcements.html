@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Объявления{% endblock %}
+
+{% block content %}
+<h2>Объявления</h2>
+<p><a href="{{ url_for('admin.create_announcement') }}">➕ Добавить новое объявление</a></p>
+
+{% if announcements %}
+    <ul>
+        {% for a in announcements %}
+            <li>
+                <strong>{{ a.title }}</strong> 
+                <em>({{ a.created_at.strftime('%d.%m.%Y %H:%M') }})</em><br>
+                {{ a.content }}
+                <br>
+                <a href="{{ url_for('admin.edit_announcement', id=a.id) }}">✏️ Редактировать</a>
+                <form method="post" action="{{ url_for('admin.delete_announcement', id=a.id) }}" style="display:inline;">
+                    <button type="submit" onclick="return confirm('Удалить объявление?');">🗑 Удалить</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Пока нет объявлений.</p>
+{% endif %}
+{% endblock %}

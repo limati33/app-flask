@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки{% endblock %}
+
+{% block content %}
+<h2>Настройки</h2>
+
+<h3>Смена пароля</h3>
+<form method="POST">
+    <input type="password" name="new_password" placeholder="Новый пароль" required>
+    <button type="submit">Сохранить</button>
+</form>
+{% endblock %}

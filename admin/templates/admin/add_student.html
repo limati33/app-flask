@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block title %}Добавить студента{% endblock %}
+{% block content %}
+<h2>Добавить студента</h2>
+<form method="POST" enctype="multipart/form-data">
+    <label>Логин: <input type="text" name="login" required></label><br>
+    <label>ФИО: <input type="text" name="name" required></label><br>
+    <label>Пароль: <input type="password" name="password" required></label><br>
+
+    <label>Выбрать группу:
+        <select name="group_id">
+            <option value="">-- выбрать --</option>
+            {% for g in groups %}
+                <option value="{{ g.id }}">{{ g.name }}</option>
+            {% endfor %}
+        </select>
+    </label><br>
+
+    <label>Или создать новую группу: 
+        <input type="text" name="new_group" placeholder="Название новой группы">
+    </label><br>
+
+    <label>Аватар: <input type="file" name="avatar"></label><br>
+
+    <button type="submit">Добавить</button>
+</form>
+{% endblock %}

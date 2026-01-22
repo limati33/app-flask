@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Преподаватель | {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='teacher.css') }}">
+</head>
+<body>
+    <nav class="teacher-nav">
+        <div class="user-info">
+            <strong>{{ session['teacher_name'] }}</strong> (Преподаватель)
+        </div>
+        <hr>
+        <a href="{{ url_for('teacher.dashboard') }}">📊 Дашборд</a>
+        <a href="{{ url_for('teacher.my_assignments') }}">📝 Мои задания</a>
+        <a href="{{ url_for('teacher.check_submissions') }}">📩 Проверка работ</a>
+        <hr>
+        <a href="{{ url_for('logout') }}">🚪 Выход</a>
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Новое объявление{% endblock %}
+
+{% block content %}
+<h2>Создать объявление</h2>
+<form method="post" enctype="multipart/form-data">
+    <p>
+        <label for="title">Заголовок:</label><br>
+        <input type="text" id="title" name="title" required>
+    </p>
+    <p>
+        <label for="content">Текст:</label><br>
+        <textarea id="content" name="content" rows="5" required></textarea>
+    </p>
+    <p>
+        <label for="photo">Фото:</label><br>
+        <input type="file" id="photo" name="photo" accept="image/*">
+    </p>
+    <p>
+        <button type="submit">💾 Сохранить</button>
+        <a href="{{ url_for('admin.announcements') }}">Отмена</a>
+    </p>
+</form>
+{% endblock %}

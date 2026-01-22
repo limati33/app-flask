@@ -1,0 +1,20 @@
+{% extends "teacher/base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+    <h2>Добро пожаловать, {{ teacher.name }}!</h2>
+    
+    <div class="stats-container">
+        <div class="card">
+            <h3>Активные задания</h3>
+            <p class="big-num">{{ assignments_count }}</p>
+        </div>
+        <div class="card warning">
+            <h3>Ждут проверки</h3>
+            <p class="big-num">{{ pending_submissions }}</p>
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('teacher.add_assignment') }}" class="btn">➕ Создать новое задание</a>
+    </div>
+{% endblock %}

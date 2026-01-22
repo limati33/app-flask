@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="avatar">
+            <img src="{{ url_for('static', filename='avatars/' + (student.avatar or 'default_avatar.png')) }}" alt="Аватар">
+        </div>
+        <div class="profile-info">
+            <h2>{{ student.name }}</h2>
+            <p>Группа: {{ student.group.name if student.group else '-' }}</p>
+            <p>Куратор: {{ student.group.curator.name if student.group and student.group.curator else '-' }}</p>
+        </div>
+    </div>
+
+    <h3>Мои одногруппники:</h3>
+    <ul class="group-list">
+        {% for s in group_students %}
+            {% if s.id != student.id %}
+                <li>
+                    <img src="{{ url_for('static', filename='avatars/' + (s.avatar or 'default_avatar.png')) }}" 
+                         alt="Аватар {{ s.name }}" class="mini-avatar">
+                    {{ s.name }}
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+
+    <div class="profile-actions">
+        <a href="{{ url_for('student_settings', student_id=student.id) }}" class="settings-btn">⚙ Настройки</a>
+    </div>
+</div>
+{% endblock %}

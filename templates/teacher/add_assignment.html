@@ -1,0 +1,64 @@
+{% extends "teacher/base.html" %}
+{% block title %}Назначить отработку{% endblock %}
+{% block content %}
+<h2>➕ Назначить индивидуальное задание</h2>
+<div class="card" style="max-width: 600px;">
+    <form method="POST">
+        <label>Название задания:</label><br>
+        <input type="text" name="title" required style="width:100%; padding:8px; margin-bottom:15px;"><br>
+        
+        <label>Описание / Инструкции:</label><br>
+        <textarea name="description" rows="5" required style="width:100%; padding:8px; margin-bottom:15px;"></textarea><br>
+
+        <label>Прикрепить файл (ТЗ, методичка):</label><br>
+        <input type="file" name="attachment" style="margin-bottom:20px;"><br>
+        
+        <label>Выберите группу:</label><br>
+        <select name="group_id" id="group_select" required style="width:100%; padding:8px; margin-bottom:15px;">
+            <option value="" disabled selected>-- Выберите группу --</option>
+            {% for g in groups %}
+                <option value="{{ g.id }}">{{ g.name }}</option>
+            {% endfor %}
+        </select><br>
+        
+        <label>Выберите студента:</label><br>
+        <select name="student_id" id="student_select" required style="width:100%; padding:8px; margin-bottom:15px;" disabled>
+            <option value="">-- Сначала выберите группу --</option>
+        </select><br>
+        
+        <label>Срок сдачи (Deadline):</label><br>
+        <input type="datetime-local" name="deadline" required style="width:100%; padding:8px; margin-bottom:20px;"><br>
+        
+        <button type="submit" class="btn">Опубликовать для студента</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('group_select').onchange = function() {
+    let groupId = this.value;
+    let studentSelect = document.getElementById('student_select');
+    
+    // Сбрасываем список студентов
+    studentSelect.innerHTML = '<option value="">Загрузка...</option>';
+    studentSelect.disabled = true;
+
+    // Запрос к нашему новому API
+    fetch('/teacher/get_students/' + groupId)
+        .then(response => response.json())
+        .then(data => {
+            studentSelect.innerHTML = '<option value="" disabled selected>-- Выберите студента --</option>';
+            if (data.length === 0) {
+                studentSelect.innerHTML = '<option value="">В группе нет студентов</option>';
+            } else {
+                data.forEach(student => {
+                    let option = document.createElement('option');
+                    option.value = student.id;
+                    option.textContent = student.name;
+                    studentSelect.appendChild(option);
+                });
+                studentSelect.disabled = false;
+            }
+        });
+};
+</script>
+{% endblock %}

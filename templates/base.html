@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Студент | {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='student.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Студенческая панель</h1>
+        {% if session.get('student_id') %}
+        <nav>
+            <a href="{{ url_for('schedule') }}">Расписание</a> |
+            <a href="{{ url_for('announcements') }}">Объявления</a> |
+            <a href="{{ url_for('teachers') }}">Преподаватели</a> |
+            <a href="{{ url_for('calendar') }}">Календарь</a> |
+            <a href="{{ url_for('profile') }}">Профиль</a> |
+            <a href="{{ url_for('logout') }}">Выйти</a>
+        </nav>
+        <hr>
+        {% endif %}
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

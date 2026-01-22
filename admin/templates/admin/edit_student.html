@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block title %}Редактировать студента{% endblock %}
+{% block content %}
+<h2>Редактировать студента</h2>
+<form method="POST" enctype="multipart/form-data">
+    <label>Логин: <input type="text" name="login" value="{{ student.login }}" required></label><br>
+    <label>ФИО: <input type="text" name="name" value="{{ student.name }}" required></label><br>
+    <label>Новый пароль: <input type="password" name="password"></label><br>
+
+    <label>Группа:
+        <select name="group_id">
+            {% for g in groups %}
+                <option value="{{ g.id }}" {% if g.id == student.group_id %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+        </select>
+    </label><br>
+
+    <p>Текущий аватар:</p>
+    <img src="{{ url_for('static', filename='avatars/' + (student.avatar or 'default_avatar.png')) }}" 
+         alt="Аватар" width="120"><br>
+
+    <label>Новый аватар: <input type="file" name="avatar"></label><br>
+
+    <button type="submit">Сохранить</button>
+</form>
+{% endblock %}

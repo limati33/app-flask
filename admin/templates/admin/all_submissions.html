@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Все ответы студентов (Контроль)</h2>
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Студент</th>
+                <th>Группа</th>
+                <th>Задание</th>
+                <th>Файл</th>
+                <th>Статус</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in submissions %}
+            <tr>
+                <td>{{ sub.student.name }}</td>
+                <td>{{ sub.student.group.name }}</td>
+                <td>{{ sub.assignment.title }}</td>
+                <td>
+                    {% if sub.file_path %}
+                    <a href="{{ url_for('static', filename='submissions/' + sub.file_path) }}" target="_blank" class="btn btn-sm btn-info">📎 Файл</a>
+                    {% else %}
+                    <span class="text-muted">Нет</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge {% if sub.status=='accepted' %}bg-success{% elif sub.status=='rejected' %}bg-danger{% else %}bg-warning{% endif %}">
+                        {{ sub.status }}
+                    </span>
+                </td>
+                <td>{{ sub.submitted_at.strftime('%d.%m %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,277 @@
+/* === Общие стили === */
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5;
+    color: #333;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* === Боковая панель === */
+.sidebar {
+    width: 220px;
+    background: #1e3a8a;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar h1 {
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.sidebar a {
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: background 0.2s, color 0.2s;
+    display: block;
+}
+
+.sidebar a:hover {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.sidebar a.active {
+    background: #2563eb;
+    color: #fff;
+    font-weight: bold;
+}
+
+/* === Контент === */
+main {
+    flex-grow: 1;
+    padding: 20px 30px;
+}
+
+/* === Заголовки === */
+h2 {
+    margin-top: 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e5e7eb;
+    color: #111827;
+}
+
+/* === Списки === */
+ul, ol {
+    list-style: none; /* убираем стандартные маркеры */
+    padding: 0;
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+ul li, ol li {
+    background: #fff;
+    margin-bottom: 10px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+ul li:hover, ol li:hover {
+    background: #e0e7ff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Ссылки внутри списка */
+ul li a, ol li a {
+    text-decoration: none;
+    color: #2563eb;
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+ul li a:hover, ol li a:hover {
+    text-decoration: underline;
+}
+
+/* === Общие таблицы === */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Заголовки */
+table th {
+    background-color: #1e3a8a;
+    color: #fff;
+    padding: 10px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #2563eb;
+}
+
+/* Ячейки */
+table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+/* Чередование строк */
+table tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+/* При наведении */
+table tr:hover {
+    background-color: #e0e7ff;
+}
+
+/* Ссылки внутри таблицы */
+table a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+table a:hover {
+    text-decoration: underline;
+}
+
+/* Для действий */
+td:last-child {
+    text-align: center;
+}
+
+/* === Кнопки === */
+button, .btn {
+    background: #2563eb;
+    border: none;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+button:hover, .btn:hover {
+    background: #1d4ed8;
+}
+
+button.danger {
+    background: #dc2626;
+}
+
+button.danger:hover {
+    background: #b91c1c;
+}
+
+/* === Формы === */
+form label {
+    display: block;
+    margin: 8px 0 4px;
+    font-weight: 500;
+}
+
+form input, form select, form textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+form input:focus, form select:focus, form textarea:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.3);
+}
+
+/* === Карточки === */
+.card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* === Сообщения === */
+.alert {
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.alert.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.alert.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Страница логина */
+.login-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+}
+
+.login-page form {
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 320px;
+}
+
+.login-page h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #111827;
+}
+
+.login-page input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.login-page button {
+    width: 100%;
+    padding: 10px;
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.login-page button:hover {
+    background-color: #1d4ed8;
+}
+
+.login-page .errors {
+    color: #dc2626;
+    margin-bottom: 10px;
+    padding-left: 0;
+    list-style: none;
+}

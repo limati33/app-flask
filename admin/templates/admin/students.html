@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Студенты{% endblock %}
+{% block content %}
+<h2>Список студентов</h2>
+<a href="{{ url_for('admin.add_student') }}">Добавить студента</a>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>ID</th>
+        <th>Логин</th>
+        <th>ФИО</th>
+        <th>Группа</th>
+        <th>Действия</th>
+    </tr>
+    {% for s in students %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.login }}</td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.group.name if s.group else "-" }}</td>
+        <td>
+            <a href="{{ url_for('admin.edit_student', id=s.id) }}">Изменить</a>
+            <form method="POST" action="{{ url_for('admin.delete_student', id=s.id) }}" style="display:inline;">
+                <button type="submit" onclick="return confirm('Удалить студента?')">Удалить</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

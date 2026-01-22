@@ -1,0 +1,184 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Проверка работ{% endblock %}
+
+{% block content %}
+<style>
+    /* Основные стили таблицы */
+    .submissions-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .submissions-table th, .submissions-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .submissions-table th { background-color: #f8f9fa; }
+
+    /* Статусы */
+    .status-pending { color: #f39c12; font-weight: bold; }
+    .status-accepted { color: #27ae60; font-weight: bold; }
+    .status-rejected { color: #e74c3c; font-weight: bold; }
+
+    /* Кнопки */
+    .btn-view { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .btn-ok { background: #27ae60; color: white; padding: 6px 10px; text-decoration: none; border-radius: 4px; display: inline-block; }
+    .btn-no { background: #e74c3c; color: white; padding: 6px 10px; text-decoration: none; border-radius: 4px; display: inline-block; }
+    .download-link { 
+        display: inline-block;
+        background: #2c3e50; 
+        color: white; 
+        padding: 8px 15px; 
+        text-decoration: none; 
+        border-radius: 5px; 
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+    .download-link:hover { background: #1a252f; }
+
+    /* Модальное окно (Чистый CSS) */
+    .custom-modal {
+        display: none; 
+        position: fixed; 
+        z-index: 9999; 
+        left: 0; top: 0; width: 100%; height: 100%; 
+        background-color: rgba(0,0,0,0.8); 
+    }
+    .modal-content {
+        background-color: #fff;
+        margin: 2% auto;
+        padding: 25px;
+        border-radius: 12px;
+        width: 80%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .close-modal {
+        position: absolute; right: 20px; top: 15px;
+        font-size: 30px; cursor: pointer; color: #aaa;
+    }
+    .close-modal:hover { color: #000; }
+
+    /* Стили контента внутри модалки */
+    .answer-box {
+        background: #f4f7f6;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 5px solid #3498db;
+        margin: 15px 0;
+        white-space: pre-wrap; /* Сохраняет переносы строк текста */
+    }
+    .preview-container {
+        text-align: center;
+        background: #eee;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    .preview-img { max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    iframe { border: none; border-radius: 5px; background: white; }
+</style>
+
+<div class="container">
+    <h2>📩 Ответы студентов</h2>
+
+    <table class="submissions-table">
+        <thead>
+            <tr>
+                <th>Студент</th>
+                <th>Задание</th>
+                <th>Дата сдачи</th>
+                <th>Статус</th>
+                <th>Просмотр</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in submissions %}
+            <tr>
+                <td><strong>{{ sub.student.name }}</strong></td>
+                <td>{{ sub.assignment.title }}</td>
+                <td>{{ sub.submitted_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td><span class="status-{{ sub.status }}">{{ sub.status }}</span></td>
+                <td>
+                    <button class="btn-view" onclick="openModal('{{ sub.id }}')">👁️ Посмотреть ответ</button>
+                </td>
+                <td>
+                    {% if sub.status == 'pending' %}
+                        <a href="{{ url_for('teacher.update_submission_status', sub_id=sub.id, status='accepted') }}" class="btn-ok" title="Принять">✅</a>
+                        <a href="{{ url_for('teacher.update_submission_status', sub_id=sub.id, status='rejected') }}" class="btn-no" title="Отклонить">❌</a>
+                    {% else %}
+                        <small>Обработано</small>
+                    {% endif %}
+                </td>
+            </tr>
+
+            <div id="modal-{{ sub.id }}" class="custom-modal">
+                <div class="modal-content">
+                    <span class="close-modal" onclick="closeModal('{{ sub.id }}')">&times;</span>
+                    
+                    <h3>Проверка работы: {{ sub.student.name }}</h3>
+                    <p><strong>Задание:</strong> {{ sub.assignment.title }}</p>
+                    
+                    <div class="answer-box">
+                        <strong>Текст ответа:</strong><br>
+                        {{ sub.answer_text if sub.answer_text else "Студент не оставил комментария к работе." }}
+                    </div>
+
+                    {% if sub.file_path %}
+                        <div class="file-section">
+                            <a href="{{ url_for('static', filename='submissions/' + sub.file_path) }}" 
+                               download class="download-link">
+                               📥 Скачать прикрепленный файл
+                            </a>
+
+                            <div class="preview-container">
+                                {% set ext = sub.file_path.split('.')[-1].lower() %}
+                                
+                                {% if ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                    <img src="{{ url_for('static', filename='submissions/' + sub.file_path) }}" class="preview-img">
+                                {% elif ext == 'pdf' %}
+                                    <iframe src="{{ url_for('static', filename='submissions/' + sub.file_path) }}" 
+                                            width="100%" height="500px"></iframe>
+                                {% else %}
+                                    <p style="padding: 20px;">Предпросмотр для формата <b>.{{ ext }}</b> недоступен. Пожалуйста, скачайте файл для проверки.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function openModal(id) {
+        document.getElementById('modal-' + id).style.display = "block";
+        document.body.style.overflow = "hidden"; // Запрещаем прокрутку страницы под модалкой
+    }
+
+    function closeModal(id) {
+        document.getElementById('modal-' + id).style.display = "none";
+        document.body.style.overflow = "auto"; // Возвращаем прокрутку
+    }
+
+    // Закрытие при клике на серый фон
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = "none";
+            document.body.style.overflow = "auto";
+        }
+    }
+</script>
+
+{% endblock %}

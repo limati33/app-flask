@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Редактировать занятие{% endblock %}
+{% block content %}
+<h2>Редактировать занятие для группы {{ group.name }}</h2>
+<form method="POST">
+    <label>Предмет: <input type="text" name="subject" value="{{ schedule.subject }}" required></label><br>
+    <label>Преподаватель:
+        <select name="teacher_id">
+            {% for t in teachers %}
+            <option value="{{ t.id }}" {% if schedule.teacher_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+        </select>
+    </label><br>
+    <label>Кабинет: <input type="text" name="room" value="{{ schedule.room }}"></label><br>
+    <label>День недели:
+        <select name="weekday">
+            {% for i in range(1,8) %}
+            <option value="{{ i }}" {% if schedule.weekday == i %}selected{% endif %}>
+                {% if i==1 %}Понедельник{% elif i==2 %}Вторник{% elif i==3 %}Среда
+                {% elif i==4 %}Четверг{% elif i==5 %}Пятница{% elif i==6 %}Суббота{% elif i==7 %}Воскресенье{% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </label><br>
+    <label>Время начала: <input type="time" name="time_start" value="{{ schedule.time_start }}" required></label><br>
+    <label>Время окончания: <input type="time" name="time_end" value="{{ schedule.time_end }}" required></label><br>
+    <button type="submit">Сохранить</button>
+</form>
+{% endblock %}

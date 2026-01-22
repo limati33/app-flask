@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block title %}Группы{% endblock %}
+{% block content %}
+<h2>Список групп</h2>
+
+{% for g in groups %}
+<div style="border:1px solid #ccc; margin-bottom:10px; padding:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+         onclick="toggleGroup({{ g.id }})">
+        <div>
+            <strong>{{ g.name }}</strong>
+            {% if g.curator %}
+                <span style="color:gray;">(Куратор: {{ g.curator.name }})</span>
+            {% endif %}
+        </div>
+        <div>▶</div>
+    </div>
+
+    <div id="group-{{ g.id }}" style="display:none; margin-top:10px; padding-left:20px;">
+        {% if g.students %}
+            <ul>
+            {% for s in g.students %}
+                <li>{{ s.name }} ({{ s.login }})</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <em>Студентов нет</em>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function toggleGroup(id) {
+    let block = document.getElementById("group-" + id);
+    block.style.display = (block.style.display === "none") ? "block" : "none";
+}
+</script>
+
+{% endblock %}

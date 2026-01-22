@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Редактировать объявление{% endblock %}
+
+{% block content %}
+<h2>Редактировать объявление</h2>
+
+<form method="post" enctype="multipart/form-data">
+    <p>
+        <label for="title">Заголовок:</label><br>
+        <input type="text" id="title" name="title" value="{{ announcement.title }}" required>
+    </p>
+
+    <p>
+        <label for="content">Текст:</label><br>
+        <textarea id="content" name="content" rows="5" required>{{ announcement.content }}</textarea>
+    </p>
+
+    <p>
+        <label for="photo">Фото:</label><br>
+        {% if announcement.photo_filename %}
+            <div style="margin: 8px 0;">
+                <img src="{{ url_for('static', filename='announcements/' ~ announcement.photo_filename) }}" 
+                     alt="Текущее фото" 
+                     style="max-width: 300px; border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.2);">
+            </div>
+        {% else %}
+            <p style="color:#777;">Нет прикреплённого фото</p>
+        {% endif %}
+        <input type="file" id="photo" name="photo" accept="image/*">
+    </p>
+
+    <p>
+        <button type="submit">💾 Обновить</button>
+        <a href="{{ url_for('admin.announcements') }}">Отмена</a>
+    </p>
+</form>
+{% endblock %}

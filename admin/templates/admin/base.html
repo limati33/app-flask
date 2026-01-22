@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админ-панель | {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('admin.static', filename='admin.css') }}">
+</head>
+<body>
+    <div class="sidebar">
+        <h1>Админ</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="{% if request.endpoint == 'admin.dashboard' %}active{% endif %}">Главная</a>
+        <a href="{{ url_for('admin.students') }}" class="{% if request.endpoint == 'admin.students' %}active{% endif %}">Студенты</a>
+        <a href="{{ url_for('admin.groups') }}" class="{% if request.endpoint == 'admin.groups' %}active{% endif %}">Группы</a>
+        <a href="{{ url_for('admin.teachers') }}" class="{% if request.endpoint == 'admin.teachers' %}active{% endif %}">Преподаватели</a>
+        <a href="{{ url_for('admin.schedule') }}" class="{% if request.endpoint == 'admin.schedule' %}active{% endif %}">Расписание</a>
+        <a href="{{ url_for('admin.announcements') }}" class="{% if request.endpoint == 'admin.announcements' %}active{% endif %}">Объявления</a>
+        <a href="{{ url_for('admin.reminders') }}" class="{% if request.endpoint == 'admin.reminders' %}active{% endif %}">Напоминание</a>
+        <hr> 
+        <a href="{{ url_for('admin.all_assignments') }}" class="{% if request.endpoint == 'admin.all_assignments' %}active{% endif %}">📚 Все отработки</a>
+        <a href="{{ url_for('admin.all_submissions') }}" class="{% if request.endpoint == 'admin.all_submissions' %}active{% endif %}">📩 Ответы студентов</a>
+        <a href="{{ url_for('admin.logout') }}">🚪 Выйти</a>
+    </div>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

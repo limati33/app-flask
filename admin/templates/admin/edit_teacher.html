@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}Редактировать преподавателя{% endblock %}
+{% block content %}
+<h2>Редактировать преподавателя: {{ teacher.name }}</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+        <h3>Данные для входа</h3>
+        <label>Логин: <input type="text" name="login" value="{{ teacher.login }}" required></label><br>
+        <label>Новый пароль: <input type="password" name="password" placeholder="Оставьте пустым, чтобы не менять"></label>
+        <p style="font-size: 0.8em; color: gray;">Если преподаватель забыл пароль, введите здесь новый.</p>
+    </div>
+
+    <label>ФИО: <input type="text" name="name" value="{{ teacher.name }}" required></label><br>
+    <label>Предмет: <input type="text" name="subject" value="{{ teacher.subject }}"></label><br>
+    <label>Кабинет: <input type="text" name="room" value="{{ teacher.room }}"></label><br>
+    <label>Контакт: <input type="text" name="contact" value="{{ teacher.contact }}"></label><br>
+
+    <p>Текущий аватар:</p>
+    <img src="{{ url_for('static', filename='avatars/teachers/' ~ (teacher.avatar or 'default_teacher.png')) }}"
+         alt="Аватар"
+         style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px; border: 2px solid #ddd;">
+    <br>
+    <label>Заменить аватар: <input type="file" name="avatar" accept="image/*"></label><br>
+
+    <label>Куратор группы:
+        <select name="curator_group_id">
+            <option value="">— Не назначать —</option>
+            {% for g in groups %}
+                <option value="{{ g.id }}" {% if g.curator_id == teacher.id %}selected{% endif %}>
+                    {{ g.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </label><br>
+
+    <hr>
+    <button type="submit" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+        Сохранить изменения
+    </button>
+    <a href="{{ url_for('admin.teachers') }}" style="margin-left: 10px; color: #666;">Отмена</a>
+</form>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% block title %}Расписание {{ group.name }}{% endblock %}
+{% block content %}
+<h2>Расписание группы {{ group.name }}</h2>
+
+<a href="{{ url_for('admin.add_group_schedule', group_id=group.id) }}">Добавить занятие</a>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Предмет</th>
+        <th>Преподаватель</th>
+        <th>Кабинет</th>
+        <th>День недели</th>
+        <th>Время</th>
+        <th>Действия</th>
+    </tr>
+    {% for s in schedule %}
+    <tr>
+        <td>{{ s.subject }}</td>
+        <td>{{ s.teacher.name if s.teacher else "-" }}</td>
+        <td>{{ s.room }}</td>
+        <td>
+            {% if s.weekday == 1 %}Понедельник{% elif s.weekday == 2 %}Вторник
+            {% elif s.weekday == 3 %}Среда{% elif s.weekday == 4 %}Четверг
+            {% elif s.weekday == 5 %}Пятница{% elif s.weekday == 6 %}Суббота
+            {% elif s.weekday == 7 %}Воскресенье{% endif %}
+        </td>
+        <td>{{ s.time_start }} - {{ s.time_end }}</td>
+        <td>
+            <a href="{{ url_for('admin.edit_group_schedule', group_id=group.id, schedule_id=s.id) }}">Редактировать</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Все отработки{% endblock %}
+
+{% block content %}
+<div class="header-action">
+    <h2>Список всех заданий (отработок)</h2>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Заголовок</th>
+                <th>Преподаватель</th>
+                <th>Группа</th>
+                <th>Дедлайн</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in assignments %}
+            <tr>
+                <td>{{ task.id }}</td>
+                <td><strong>{{ task.title }}</strong></td>
+                <td>{{ task.teacher.name if task.teacher else 'Не назначен' }}</td>
+                <td>{{ task.group.name if task.group else 'Общая' }}</td>
+                <td>{{ task.deadline.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td>
+                    <a href="#" class="btn-edit">Редактировать</a>
+                    <form action="{{ url_for('admin.delete_assignment', id=task.id) }}" 
+                          method="POST" 
+                          style="display:inline;">
+                        <button type="submit"
+                                class="btn-delete"
+                                onclick="return confirm('Удалить задание?')">
+                            Удалить
+                        </button>
+                    </form>
+
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center;">Заданий пока нет.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

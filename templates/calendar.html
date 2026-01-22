@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Календарь{% endblock %}
+
+{% block content %}
+<h2>Календарь</h2>
+
+<div class="calendar-page">
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button id="prev-month">‹</button>
+            <h3 id="month-year"></h3>
+            <button id="next-month">›</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+
+        <!-- Панель событий ПОД календарём -->
+        <div class="event-panel" id="event-panel">
+            <h3 id="event-date-title">Выберите дату</h3>
+            <div id="event-list">
+                <p>Нет событий</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Добавить событие</h3>
+<form method="POST" class="add-event-form">
+    <input type="text" name="title" placeholder="Название события" required>
+    <div class="form-group">
+        <label for="date">Выберите дату:</label>
+        <input type="date" id="date" name="date" required>
+    </div>
+    <div class="form-group">
+        <label for="time">Выберите время:</label>
+        <input type="time" id="time" name="time">
+    </div>
+    <input type="text" name="type" placeholder="Тип события">
+    <textarea name="note" placeholder="Примечание"></textarea>
+    <button type="submit">Добавить</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const reminders = [
+{% for r in reminders %}
+    {
+        date: "{{ r.date.strftime('%Y-%m-%d') }}",
+        title: "{{ r.title }}",
+        time: "{{ r.time or '' }}",
+        type: "{{ r.type or '' }}",
+        note: "{{ r.note or '' }}"
+    },
+{% endfor %}
+];
+
+let currentYear = {{ year }};
+let currentMonth = {{ month }} - 1;
+
+const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const weekDays = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+
+function renderCalendar(year, month){
+    const grid = document.getElementById("calendar-grid");
+    grid.innerHTML = "";
+
+    document.getElementById("month-year").innerText = monthNames[month] + " " + year;
+
+    // Заголовки дней недели
+    const header = document.createElement("div");
+    header.className = "weekdays";
+    weekDays.forEach(d => {
+        const div = document.createElement("div");
+        div.className = "weekday";
+        div.innerText = d;
+        header.appendChild(div);
+    });
+    grid.appendChild(header);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    let emptyDays = (firstDay + 6) % 7;
+    for(let i=0;i<emptyDays;i++){
+        const div = document.createElement("div");
+        div.className = "day empty";
+        grid.appendChild(div);
+    }
+
+    // Дни месяца
+    for(let d=1; d<=lastDate; d++){
+        const div = document.createElement("div");
+        div.className = "day";
+
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        div.innerHTML = `<div class="day-number">${d}</div>`;
+
+        reminders.filter(e => e.date===dateStr).forEach(ev=>{
+            const evDiv = document.createElement("div");
+            evDiv.className = "calendar-event";
+            evDiv.innerText = (ev.time?ev.time+" ":"") + ev.title;
+            div.appendChild(evDiv);
+        });
+
+        const today = new Date();
+        if(today.getFullYear()===year && today.getMonth()===month && today.getDate()===d){
+            div.classList.add("today");
+        }
+
+        // Клик по дню
+        div.addEventListener("click", ()=>{
+            showEventsForDate(dateStr);
+        });
+
+        grid.appendChild(div);
+    }
+}
+
+function showEventsForDate(dateStr){
+    const events = reminders.filter(e => e.date === dateStr);
+    const panel = document.getElementById("event-list");
+    const title = document.getElementById("event-date-title");
+    title.innerText = "События " + dateStr;
+
+    panel.innerHTML = "";
+    if(events.length === 0){
+        panel.innerHTML = "<p>Нет событий</p>";
+    } else {
+        events.forEach(ev=>{
+            const div = document.createElement("div");
+            div.className = "event-item";
+            div.innerHTML = `
+                <strong>${ev.title}</strong><br>
+                ${ev.time ? ev.time + "<br>" : ""}
+                ${ev.type ? "<em>"+ev.type+"</em><br>" : ""}
+                ${ev.note ? ev.note : ""}
+            `;
+            panel.appendChild(div);
+        });
+    }
+}
+
+document.getElementById("prev-month").addEventListener("click", ()=>{
+    currentMonth--;
+    if(currentMonth<0){ currentMonth=11; currentYear--; }
+    renderCalendar(currentYear, currentMonth);
+});
+
+document.getElementById("next-month").addEventListener("click", ()=>{
+    currentMonth++;
+    if(currentMonth>11){ currentMonth=0; currentYear++; }
+    renderCalendar(currentYear, currentMonth);
+});
+
+renderCalendar(currentYear, currentMonth);
+</script>
+{% endblock %}

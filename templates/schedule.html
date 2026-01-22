@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Расписание{% endblock %}
+
+{% block content %}
+<h2>Расписание</h2>
+
+{% for d in days %}
+<div class="day-indicator">
+    <span>{{ d.label }}</span>
+    — {{ d.date.strftime('%d.%m.%Y') }} ({{ d.weekday_name }})
+</div>
+
+{% if d.schedule %}
+<div class="schedule-cards">
+    {% for s in d.schedule %}
+    <div class="schedule-card">
+        <div class="extra-info">
+            #️⃣ Пара №{{ loop.index }}
+        </div>
+        <div class="subject">📘 {{ s.subject }}</div>
+        <div class="teacher">👨‍🏫 {{ s.teacher.name if s.teacher else "-" }}</div>
+        <div class="room">🚪 {{ s.room or "-" }}</div>
+        <div class="time">⏰ {{ s.time_start }} - {{ s.time_end }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>Нет расписания</p>
+{% endif %}
+<hr>
+{% endfor %}
+
+{% endblock %}

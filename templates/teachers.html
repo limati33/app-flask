@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Преподаватели{% endblock %}
+
+{% block content %}
+<h2>Наши преподаватели</h2>
+
+<div class="teachers-grid">
+    {% for t in teachers %}
+    <div class="teacher-card">
+        <img src="{{ url_for('static', filename='avatars/teachers/' + (t.avatar or 'default_teacher.png')) }}" alt="Аватар">
+        <h3>{{ t.name }}</h3>
+        <p><strong>Предмет:</strong> {{ t.subject or "-" }}</p>
+        <p><strong>Кабинет:</strong> {{ t.room or "-" }}</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
