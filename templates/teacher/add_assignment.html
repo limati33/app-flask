@@ -1,64 +1,132 @@
 {% extends "teacher/base.html" %}
 {% block title %}Назначить отработку{% endblock %}
 {% block content %}
-<h2>➕ Назначить индивидуальное задание</h2>
-<div class="card" style="max-width: 600px;">
-    <form method="POST">
-        <label>Название задания:</label><br>
-        <input type="text" name="title" required style="width:100%; padding:8px; margin-bottom:15px;"><br>
-        
-        <label>Описание / Инструкции:</label><br>
-        <textarea name="description" rows="5" required style="width:100%; padding:8px; margin-bottom:15px;"></textarea><br>
+<style>
+.page-wrapper{max-width:900px;margin:auto}
+.assignment-card{background:#fff;border-radius:18px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
+.page-title{font-size:30px;margin-bottom:25px;font-weight:700}
+.form-group{margin-bottom:22px}
+.form-label{display:block;margin-bottom:8px;font-weight:600;color:#2c3e50}
+.form-control{width:100%;padding:12px 14px;border:1px solid #dcdde1;border-radius:10px;font-size:15px;transition:.2s;box-sizing:border-box}
+.form-control:focus{border-color:#3498db;outline:none;box-shadow:0 0 0 4px rgba(52,152,219,.15)}
+textarea.form-control{resize:vertical;min-height:130px}
+.filters-row{display:flex;gap:15px;flex-wrap:wrap}
+.filters-row .form-group{flex:1;min-width:220px}
+#drop-area{border:2px dashed #3498db;border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:.25s;background:#f8fbff}
+#drop-area:hover{background:#eef7ff}
+#drop-area.highlight{background:#dff0ff;border-color:#2980b9}
+.upload-icon{font-size:42px;margin-bottom:10px}
+.upload-text{color:#555;font-size:16px}
+.file-counter{margin-top:15px;color:#666;font-size:14px}
+#file-list{list-style:none;padding:0;margin-top:18px}
+.file-item{display:flex;align-items:center;justify-content:space-between;background:#f8f9fb;border-radius:10px;padding:12px 15px;margin-bottom:10px;border:1px solid #ecf0f1}
+.file-info{display:flex;align-items:center;gap:12px}
+.file-icon{font-size:22px}
+.file-name{font-weight:500}
+.file-size{color:#888;font-size:13px}
+.remove-btn{border:none;background:none;color:#e74c3c;cursor:pointer;font-size:18px}
+.remove-btn:hover{transform:scale(1.15)}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:25px}
+.btn-main{background:#3498db;color:#fff;border:none;padding:14px 24px;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:.2s}
+.btn-main:hover{background:#2980b9}
+.btn-secondary{background:#ecf0f1;border:none;padding:14px 22px;border-radius:10px;cursor:pointer}
+.student-count{margin-top:8px;color:#777;font-size:14px}
+@media(max-width:768px){.assignment-card{padding:20px}.filters-row{flex-direction:column}}
+</style>
 
-        <label>Прикрепить файл (ТЗ, методичка):</label><br>
-        <input type="file" name="attachment" style="margin-bottom:20px;"><br>
-        
-        <label>Выберите группу:</label><br>
-        <select name="group_id" id="group_select" required style="width:100%; padding:8px; margin-bottom:15px;">
+<div class="page-wrapper">
+  <h2 class="page-title">📚 Назначить индивидуальное задание</h2>
+  <div class="assignment-card">
+    <form method="POST" enctype="multipart/form-data" id="assignmentForm">
+      <div class="form-group">
+        <label class="form-label">Название задания</label>
+        <input type="text" name="title" required class="form-control" placeholder="Введите название задания">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Описание / Инструкции</label>
+        <textarea name="description" required class="form-control" placeholder="Введите описание задания"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">📎 Файлы</label>
+        <div id="drop-area">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text">Перетащите файлы сюда или нажмите для выбора</div>
+          <div class="file-counter" id="file-counter">Файлов не выбрано</div>
+          <input type="file" id="fileElem" name="attachments[]" multiple hidden>
+        </div>
+        <ul id="file-list"></ul>
+      </div>
+
+      <div class="filters-row">
+        <div class="form-group">
+          <label class="form-label">👥 Группа</label>
+          <select name="group_id" id="group_select" required class="form-control">
             <option value="" disabled selected>-- Выберите группу --</option>
-            {% for g in groups %}
-                <option value="{{ g.id }}">{{ g.name }}</option>
+            {% for g in groups|sort(attribute='name') %}
+              <option value="{{ g.id }}">{{ g.name }}</option>
             {% endfor %}
-        </select><br>
-        
-        <label>Выберите студента:</label><br>
-        <select name="student_id" id="student_select" required style="width:100%; padding:8px; margin-bottom:15px;" disabled>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🔎 Поиск студента</label>
+          <input type="text" id="studentSearch" class="form-control" placeholder="Введите имя студента">
+        </div>
+      </div>
+
+      <div class="filters-row">
+        <div class="form-group">
+          <label class="form-label">🎓 Студент</label>
+          <select name="student_id" id="student_select" required class="form-control" disabled>
             <option value="">-- Сначала выберите группу --</option>
-        </select><br>
-        
-        <label>Срок сдачи (Deadline):</label><br>
-        <input type="datetime-local" name="deadline" required style="width:100%; padding:8px; margin-bottom:20px;"><br>
-        
-        <button type="submit" class="btn">Опубликовать для студента</button>
+          </select>
+          <div class="student-count" id="student-count"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">↕ Сортировка</label>
+          <select id="sortStudents" class="form-control">
+            <option value="az">A → Z / А → Я</option>
+            <option value="za">Z → A / Я → А</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">⏰ Срок сдачи</label>
+        <input type="datetime-local" name="deadline" required class="form-control">
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-main">🚀 Опубликовать задание</button>
+        <button type="button" class="btn-secondary" onclick="clearFiles()">🗑 Очистить файлы</button>
+      </div>
     </form>
+  </div>
 </div>
 
 <script>
-document.getElementById('group_select').onchange = function() {
-    let groupId = this.value;
-    let studentSelect = document.getElementById('student_select');
-    
-    // Сбрасываем список студентов
-    studentSelect.innerHTML = '<option value="">Загрузка...</option>';
-    studentSelect.disabled = true;
+const groupSelect=document.getElementById('group_select'),studentSelect=document.getElementById('student_select'),studentSearch=document.getElementById('studentSearch'),sortStudents=document.getElementById('sortStudents'),studentCount=document.getElementById('student-count');
+let studentsData=[];
+groupSelect.onchange=function(){const groupId=this.value;studentSelect.innerHTML='<option>Загрузка...</option>';studentSelect.disabled=true;fetch('/teacher/get_students/'+groupId).then(r=>r.json()).then(data=>{studentsData=data;renderStudents();studentSelect.disabled=false;})};
+function renderStudents(){let filtered=[...studentsData],search=studentSearch.value.toLowerCase();if(search)filtered=filtered.filter(s=>s.name.toLowerCase().includes(search));filtered.sort((a,b)=>sortStudents.value==='az'?a.name.localeCompare(b.name,'ru'):b.name.localeCompare(a.name,'ru'));studentSelect.innerHTML='<option value="" disabled selected>-- Выберите студента --</option>';filtered.forEach(student=>{const option=document.createElement('option');option.value=student.id;option.textContent=student.name;studentSelect.appendChild(option)});studentCount.textContent=`Найдено студентов: ${filtered.length}`;}
+studentSearch.addEventListener('input',renderStudents);
+sortStudents.addEventListener('change',renderStudents);
 
-    // Запрос к нашему новому API
-    fetch('/teacher/get_students/' + groupId)
-        .then(response => response.json())
-        .then(data => {
-            studentSelect.innerHTML = '<option value="" disabled selected>-- Выберите студента --</option>';
-            if (data.length === 0) {
-                studentSelect.innerHTML = '<option value="">В группе нет студентов</option>';
-            } else {
-                data.forEach(student => {
-                    let option = document.createElement('option');
-                    option.value = student.id;
-                    option.textContent = student.name;
-                    studentSelect.appendChild(option);
-                });
-                studentSelect.disabled = false;
-            }
-        });
-};
+const dropArea=document.getElementById('drop-area'),fileInput=document.getElementById('fileElem'),fileList=document.getElementById('file-list'),fileCounter=document.getElementById('file-counter');
+let selectedFiles=[];
+dropArea.addEventListener('click',()=>fileInput.click());
+['dragenter','dragover'].forEach(e=>dropArea.addEventListener(e,e2=>{e2.preventDefault();dropArea.classList.add('highlight')}));['dragleave','drop'].forEach(e=>dropArea.addEventListener(e,e2=>{e2.preventDefault();dropArea.classList.remove('highlight')}));
+dropArea.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+fileInput.addEventListener('change',()=>addFiles(fileInput.files));
+function addFiles(files){for(let file of files){const exists=selectedFiles.some(f=>f.name===file.name&&f.size===file.size);if(!exists)selectedFiles.push(file)}updateFileInput();renderFileList()}
+function updateFileInput(){const dt=new DataTransfer();selectedFiles.forEach(file=>dt.items.add(file));fileInput.files=dt.files}
+function getFileIcon(name){const ext=name.split('.').pop().toLowerCase();if(['jpg','jpeg','png','gif','webp'].includes(ext))return'🖼';if(['mp4','webm'].includes(ext))return'🎬';if(['pdf'].includes(ext))return'📕';if(['doc','docx'].includes(ext))return'📘';if(['zip','rar'].includes(ext))return'🗜';return'📄'}
+function formatBytes(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return(bytes/1024).toFixed(1)+' KB';return(bytes/(1024*1024)).toFixed(1)+' MB'}
+function renderFileList(){fileList.innerHTML='';if(selectedFiles.length===0){fileCounter.textContent='Файлов не выбрано';return}fileCounter.textContent=`Выбрано файлов: ${selectedFiles.length}`;selectedFiles.forEach((file,index)=>{const li=document.createElement('li');li.className='file-item';li.innerHTML=`<div class="file-info"><div class="file-icon">${getFileIcon(file.name)}</div><div><div class="file-name">${file.name}</div><div class="file-size">${formatBytes(file.size)}</div></div></div><button type="button" class="remove-btn" onclick="removeFile(${index})">✖</button>`;fileList.appendChild(li)})}
+function removeFile(index){selectedFiles.splice(index,1);updateFileInput();renderFileList()}
+function clearFiles(){selectedFiles=[];updateFileInput();renderFileList()}
 </script>
 {% endblock %}

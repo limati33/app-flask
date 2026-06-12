@@ -30,6 +30,7 @@ def init_app(app):
         app.config['FCM_ENABLED'] = False
         print(f"[fcm] ФАЙЛ НЕ НАЙДЕН: {fcm_path} — FCM ОТКЛЮЧЁН")
 
+#Работает admin_app.py -> admin/routes.py
 def send_new_announcement_push(title: str, content: str):
     try:
         if not firebase_admin._apps:
@@ -52,6 +53,7 @@ def send_new_announcement_push(title: str, content: str):
         import traceback; traceback.print_exc()
         return None
 
+#Не работает teacher/teacher_routes.py
 def send_personal_assignment_push(student_id, title):
     """Отправляет уведомление конкретному студенту на его тему"""
     try:
@@ -75,4 +77,38 @@ def send_personal_assignment_push(student_id, title):
         return resp
     except Exception as e:
         print(f"[fcm] Ошибка отправки личного пуша: {e}")
+        return None
+
+#Не работает teacher/teacher_routes.py
+def send_submission_status_push(student_id, assignment_title, status, comment=None):
+    try:
+        if not firebase_admin._apps:
+            print("[fcm] Firebase не инициализирован — пуш отменен")
+            return None
+
+        topic_name = f"student_{student_id}"
+
+        if status == "accepted":
+            title = "✅ Работа принята"
+            body = f"Задание «{assignment_title}» принято"
+        else:
+            title = "❌ Работа отклонена"
+            body = f"Задание «{assignment_title}» отклонено"
+            if comment:
+                body += f": {comment[:80]}"
+
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body
+            ),
+            topic=topic_name
+        )
+
+        resp = messaging.send(message)
+        print(f"[fcm] Пуш о статусе отправлен студенту {student_id}")
+        return resp
+
+    except Exception as e:
+        print(f"[fcm] Ошибка отправки пуша статуса: {e}")
         return None

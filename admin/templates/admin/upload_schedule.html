@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% block title %}Импорт расписания{% endblock %}
+{% block content %}
+<h2>Импорт расписания из Word</h2>
+<p>Загрузите файл .docx с таблицей расписания. Система автоматически определит дату и смену.</p>
+
+<form method="POST" enctype="multipart/form-data">
+
+    <label>
+        Выберите файл (.docx):
+        <input
+            type="file"
+            name="schedule_file"
+            required
+            accept=".docx"
+        >
+    </label>
+
+    <br><br>
+
+    <label>
+        Режим парсинга:
+    </label>
+
+    <select name="parser_mode">
+
+        <option value="simple">
+            Без ИИ (быстро и стабильно)
+        </option>
+
+        <option value="ai">
+            С ИИ (медленно, но умнее)
+        </option>
+
+    </select>
+
+    <br><br>
+
+    <button type="submit">
+        Загрузить и обработать
+    </button>
+
+</form>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul style="color: red;">
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+{% endblock %}

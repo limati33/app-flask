@@ -1,13 +1,25 @@
 {% extends "admin/base.html" %}
 {% block title %}Расписание — группы{% endblock %}
 {% block content %}
-<h2>Выбор группы</h2>
 
+<h2>Расписание</h2>
+
+<a href="{{ url_for('admin.add_group_schedule', group_id=0) }}">
+    ➕ Добавить занятие
+</a>
+<br>
+<a href="{{ url_for('admin.upload_schedule') }}">
+    ➕ Загрузить занятие
+</a>
+
+<h3>Группы</h3>
 <ul>
 {% for g in groups %}
     <li>
         {{ g.name }}
-        <a href="{{ url_for('admin.group_schedule', group_id=g.id) }}">Открыть расписание</a>
+        <a href="{{ url_for('admin.group_schedule', group_id=g.id) }}">
+            Открыть расписание
+        </a>
     </li>
 {% endfor %}
 </ul>

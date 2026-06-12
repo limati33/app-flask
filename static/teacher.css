@@ -23,3 +23,26 @@ th { background: #f8f9fa; }
 .status-pending { color: #f39c12; font-weight: bold; }
 .status-accepted { color: #27ae60; font-weight: bold; }
 .status-rejected { color: #e74c3c; font-weight: bold; }
+
+#drop-area {
+    border: 2px dashed #888;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+#drop-area.highlight {
+    border-color: #4CAF50;
+    background-color: #f4fff4;
+}
+
+#file-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+#file-list li {
+    padding: 5px 0;
+}

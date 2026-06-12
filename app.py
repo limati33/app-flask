@@ -7,34 +7,42 @@ import os
 from calendar import monthcalendar, day_name, month_name
 from collections import defaultdict
 from urllib.parse import urljoin
-from models import db, Student, Group, Schedule, Announcement, Reminder, Teacher, Assignment, Submission
+from models import db, Student, Group, Schedule, Announcement, Reminder, Teacher, Assignment, AssignmentFile, Submission
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import json
 from fcm import init_app as init_fcm
-from teacher.teacher_routes import teacher_bp # Импортируй новый блюпринт
 from werkzeug.utils import secure_filename
 
-
 app = Flask(__name__)
-app.register_blueprint(teacher_bp)    # Зарегистрируй его
+
+# Конфиг
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///college.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'supersecretkey123'  # строка, которая не меняется
-app.config['JWT_SECRET_KEY'] = 'supersecretkey123'  # Тот же секрет для JWT (можно другой, но сильный)
-
-# Явно указываем, где искать токен и тип заголовка
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey123')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'supersecretkey123')
 app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 app.config["JWT_HEADER_NAME"] = "Authorization"
 app.config["JWT_HEADER_TYPE"] = "Bearer"
 
-UPLOAD_FOLDER = 'static/submissions'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Загрузка + ограничение размера (например 30MB)
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'static/submissions')
+app.config['MAX_CONTENT_LENGTH'] = 300 * 1024 * 1024  # 300 MB
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# Инициализация расширений
 db.init_app(app)
 migrate = Migrate(app, db)
-jwt = JWTManager(app)  # Инициализация JWT
+jwt = JWTManager(app)
 init_fcm(app)
+
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'zip', 'mp4', 'webm'}
+
+# Регистрируем блюпринты после инициализации (чтобы они могли безопасно использовать db и т.д.)
+from teacher.teacher_routes import teacher_bp
+app.register_blueprint(teacher_bp)
+
+from admin import admin_bp
+app.register_blueprint(admin_bp, url_prefix="/admin")
 
 # ---- Вспомогательные функции ----
 def _get_jwt_student_id():
@@ -249,34 +257,52 @@ def api_profile():
         student = Student.query.get_or_404(student_id)
         group_students = Student.query.filter_by(group_id=student.group_id).all()
 
-        # --- сформировать корректный avatar_url ---
-        avatar_url = None
-        if student.avatar:
-            avatar = student.avatar.strip()
-            # если уже абсолютный URL — используем как есть
-            if avatar.startswith("http://") or avatar.startswith("https://"):
-                avatar_url = avatar
-            else:
-                # Если в базе хранится относительный путь (например "uploads/avatars/x.png" или "/uploads/avatars/x.png"
-                # — собираем абсолютный URL на основе request.host_url
-                # Пример: http://10.49.216.60:5000/uploads/avatars/x.png
-                path = avatar
-                if not path.startswith("/"):
-                    # попробуем предположить папку: измени при необходимости
-                    path = f"/static/avatars/{path}"
-                avatar_url = urljoin(request.host_url, path.lstrip("/"))
+        # === Функция формирования полного URL аватара ===
+        def get_avatar_url(avatar_path: str | None) -> str | None:
+            if not avatar_path:
+                return None
 
+            avatar = avatar_path.strip().replace("\\", "/")
+
+            if avatar.startswith(("http://", "https://")):
+                return avatar
+
+            if avatar.startswith("/"):
+                return urljoin(request.host_url, avatar.lstrip("/"))
+
+            return urljoin(request.host_url, f"uploads/avatars/{avatar}")
+
+        # Твой профиль
         profile_data = {
             "id": student.id,
             "name": student.name,
-            "avatar": avatar_url,
+            "avatar": get_avatar_url(student.avatar),
             "login": student.login,
             "group": student.group.name if student.group else None,
-            "group_students": [{"id": s.id, "name": s.name} for s in group_students]
+            # === Главное изменение здесь ===
+            "group_students": [
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "avatar": get_avatar_url(s.avatar)
+                }
+                for s in group_students
+            ],
+            # Куратор (добавляем, чтобы показывался на профиле)
+            "curator": None
         }
+
+        if student.group and student.group.curator:
+            curator = student.group.curator
+            profile_data["curator"] = {
+                "id": curator.id,
+                "name": curator.name,
+                "avatar": get_avatar_url(curator.avatar)
+            }
 
         app.logger.debug(f"/api/profile -> profile_data: {profile_data}")
         return jsonify(profile_data)
+
     except Exception as e:
         app.logger.exception("Error in /api/profile")
         return jsonify({"message": f"Server error: {str(e)}"}), 500
@@ -438,14 +464,30 @@ def api_teachers():
         return jsonify({"message": "Invalid token identity"}), 401
 
     teachers = Teacher.query.all()
-    serialized_teachers = [{
-        "id": t.id,
-        "name": t.name,
-        "subject": t.subject,
-        "contact": t.contact,
-        "avatar": t.avatar,
-        "avatar_url": f"{request.host_url}static/avatars/teachers/{t.avatar or 'default.png'}"
-    } for t in teachers]
+    serialized_teachers = []
+
+    for t in teachers:
+        clean_avatar_url = None
+
+        # Восстанавливаем генерацию ссылок на аватарки
+        if t.avatar:
+            avatar_file = os.path.basename(t.avatar.replace("\\", "/"))
+            clean_avatar_url = url_for(
+                "static",
+                filename=f"avatars/teachers/{avatar_file}",
+                _external=True
+            )
+
+        serialized_teachers.append({
+            "id": t.id,
+            "name": t.name,
+            "subject": t.subject,
+            "contact": t.contact,
+            "room": t.room,  # КРИТИЧЕСКИ ВАЖНО: возвращаем кабинет!
+            "avatar": clean_avatar_url,
+            "avatar_url": clean_avatar_url
+        })
+
     return jsonify({"teachers": serialized_teachers})
 
 @app.route('/api/change_password', methods=['POST'])
@@ -472,95 +514,168 @@ def change_password():
 
 # --- API: Задания (Отработки) ---
 @app.route("/api/assignments/my", methods=["GET"])
-@jwt_required() # Убедись, что используешь JWT
+@jwt_required()
 def get_my_assignments():
-    current_user_id = get_jwt_identity() # ID студента из токена
-    student = Student.query.get(current_user_id)
-    
-    if not student:
-        return jsonify({"success": False, "message": "Студент не найден"}), 404
+    student_id = _get_jwt_student_id()
+    if student_id is None:
+        return jsonify({
+            "success": False,
+            "message": "Invalid token identity"
+        }), 401
 
-    # Ищем задания для группы студента
-    # Сортируем: сначала те, у которых дедлайн ближе
-    assignments = Assignment.query.filter_by(group_id=student.group_id)\
-        .order_by(Assignment.deadline.asc()).all()
-    
+    student = Student.query.get(student_id)
+    if not student:
+        return jsonify({
+            "success": False,
+            "message": "Студент не найден"
+        }), 404
+
+    assignments = (
+        Assignment.query
+        .filter_by(group_id=student.group_id)
+        .order_by(Assignment.deadline.asc())
+        .all()
+    )
+
     result = []
+
     for task in assignments:
-        # Проверяем, сдал ли студент уже это задание
-        submission = Submission.query.filter_by(assignment_id=task.id, student_id=student.id).first()
-        status = submission.status if submission else "pending"
-        
-        # Если задание еще не принято (pending или rejected) или вообще не сдано — добавляем в список
-        if status != "accepted":
-            result.append({
-                "id": task.id,
-                "title": task.title,
-                "description": task.description,
-                "deadline": task.deadline.strftime("%Y-%m-%d %H:%M"),
-                "status": status, # pending, rejected, accepted
-                "teacher_name": task.teacher.name if task.teacher else "Учитель"
+        # 📎 файлы задания
+        attachments = []
+        files_q = AssignmentFile.query.filter_by(assignment_id=task.id).all()
+        for af in files_q:
+            attachments.append({
+                "filename": af.filename,
+                "url": urljoin(
+                    request.host_url,
+                    f"static/uploads/assignments/{task.id}_{af.filename}"
+                )
             })
 
+        submission = Submission.query.filter_by(
+            assignment_id=task.id,
+            student_id=student.id
+        ).first()
+
+        status = submission.status if submission else "pending"
+
+        # ❗ принятые не показываем
+        if status == "accepted":
+            continue
+
+        deadline_str = (
+            task.deadline.strftime("%Y-%m-%d %H:%M")
+            if task.deadline else None
+        )
+
+        result.append({
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "deadline": deadline_str,
+            "status": status,                     # pending / rejected
+            "teacher_name": task.teacher.name if task.teacher else "Учитель",
+            "attachments": attachments,
+
+            # 👇 важно для Android
+            "teacher_comment": (
+                submission.teacher_comment
+                if submission and status == "rejected"
+                else None
+            )
+        })
+
     return jsonify({
-        "success": True, 
+        "success": True,
         "assignments": result
     })
+
+def allowed_file(filename):
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    return ext in ALLOWED_EXTENSIONS
 
 @app.route("/api/submissions", methods=["POST"])
 @jwt_required()
 def submit_assignment():
-    current_user_id = get_jwt_identity()
-    
-    assignment_id = request.form.get("assignment_id")
-    answer_text = request.form.get("answer_text")
-    # Нужно сделать цикл:
-    files = request.files.getlist("files") # Получаем список
-    for file in files:
-        if file:
-            filename = secure_filename(f"sub_{assignment_id}_{current_user_id}_{file.filename}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            # Здесь логика сохранения путей в базу (возможно, нужно изменить БД, чтобы хранить несколько путей)
+    current_user_id = _get_jwt_student_id()
+    if current_user_id is None:
+        return jsonify({"success": False, "message": "Invalid token identity"}), 401
 
-    if not assignment_id:
+    assignment_id_raw = request.form.get("assignment_id") or request.form.get("id")
+    answer_text = request.form.get("answer_text") or request.form.get("text")
+
+    if not assignment_id_raw:
         return jsonify({"success": False, "message": "Нет ID задания"}), 400
 
-    filename = None
-    if file:
-        filename = secure_filename(f"sub_{assignment_id}_{current_user_id}_{file.filename}")
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    try:
+        assignment_id = int(assignment_id_raw)
+    except ValueError:
+        return jsonify({"success": False, "message": "Неверный ID задания"}), 400
 
-    submission = Submission.query.filter_by(
-        assignment_id=assignment_id, 
-        student_id=current_user_id
-    ).first()
+    # Проверим, существует ли задание
+    assignment = Assignment.query.get(assignment_id)
+    if not assignment:
+        return jsonify({"success": False, "message": "Задание не найдено"}), 404
 
+    SUBMISSION_FOLDER = app.config['UPLOAD_FOLDER']
+    os.makedirs(SUBMISSION_FOLDER, exist_ok=True)
+
+    files = request.files.getlist("files")
+    saved_files = []
+
+    for f in files:
+        if f and f.filename:
+            # Проверка расширения
+            if not allowed_file(f.filename):
+                app.logger.warning(f"Недопустимое расширение файла: {f.filename}")
+                continue
+
+            safe_name = secure_filename(f"sub_{assignment_id}_{current_user_id}_{f.filename}")
+            dest = os.path.join(SUBMISSION_FOLDER, safe_name)
+
+            try:
+                f.save(dest)
+                if os.path.getsize(dest) > 0:
+                    saved_files.append(safe_name)
+                    app.logger.info(f"Файл сохранен: {safe_name}")
+                else:
+                    os.remove(dest)
+                    app.logger.warning(f"Удален пустой файл: {safe_name}")
+            except Exception as e:
+                app.logger.exception(f"Ошибка сохранения файла {f.filename}: {e}")
+
+    file_path_db = json.dumps(saved_files, ensure_ascii=False) if saved_files else None
+
+    submission = Submission.query.filter_by(assignment_id=assignment_id, student_id=current_user_id).first()
     if not submission:
         submission = Submission(
             assignment_id=assignment_id,
             student_id=current_user_id,
             answer_text=answer_text,
-            file_path=filename,
-            status="pending"
+            file_path=file_path_db,
+            status="pending",
+            submitted_at=datetime.utcnow()
         )
         db.session.add(submission)
     else:
         submission.answer_text = answer_text
-        if filename: submission.file_path = filename
+        if file_path_db:
+            submission.file_path = file_path_db
         submission.status = "pending"
         submission.submitted_at = datetime.utcnow()
 
     db.session.commit()
-    return jsonify({"success": True, "message": "Работа отправлена!"})
 
-def get_user_from_token(token):
-    # Убираем "Bearer " если есть
-    if token.startswith("Bearer "):
-        token = token[7:]
+    return jsonify({"success": True, "message": "Работа отправлена!", "files": saved_files})
+
+# def get_user_from_token(token):
+#     # Убираем "Bearer " если есть
+#     if token.startswith("Bearer "):
+#         token = token[7:]
     
-    # Здесь ищем пользователя по токену (пример, если токен хранится в users)
-    user = User.query.filter_by(token=token).first()
-    return user
+#     # Здесь ищем пользователя по токену (пример, если токен хранится в users)
+#     user = User.query.filter_by(token=token).first()
+#     return user
 
 # @app.before_request
 # def log_headers():

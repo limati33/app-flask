@@ -1,17 +1,136 @@
 {% extends "admin/base.html" %}
 {% block title %}Напоминания{% endblock %}
 
+{% block extra_css %}
+<style>
+    .toolbar {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr auto;
+        gap: 12px;
+        align-items: end;
+        margin: 16px 0 20px;
+        padding: 16px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
+
+    .toolbar .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .toolbar label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .toolbar input,
+    .toolbar select,
+    .toolbar button {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        background: #fff;
+        font: inherit;
+    }
+
+    .toolbar button {
+        cursor: pointer;
+        background: #0d6efd;
+        color: #fff;
+        border: none;
+        transition: .15s ease;
+    }
+
+    .toolbar button:hover {
+        background: #0b5ed7;
+    }
+
+    .toolbar .secondary {
+        background: #6c757d;
+    }
+
+    .toolbar .secondary:hover {
+        background: #5c636a;
+    }
+
+    .toolbar .toggle {
+        white-space: nowrap;
+    }
+
+    .sort-hint {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #dee2e6;
+        padding: 10px;
+        vertical-align: top;
+    }
+
+    th {
+        background: #f1f3f5;
+        text-align: left;
+        font-weight: 700;
+    }
+
+    .group-header {
+        background-color: #e9ecef !important;
+        font-weight: bold;
+        text-align: left;
+    }
+
+    .empty-state {
+        padding: 20px;
+        text-align: center;
+        color: #6c757d;
+        border: 1px dashed #ced4da;
+        border-radius: 10px;
+        margin-top: 10px;
+    }
+
+    .muted {
+        color: #6c757d;
+        font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
+        .toolbar {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .toolbar {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>Напоминания</h2>
 
 <h3>Добавить новое</h3>
-<form method="POST">
+<form method="POST" action="{{ url_for('admin.reminders') }}">
     <input type="text" name="title" placeholder="Название" required>
     <input type="date" name="date" required>
     <input type="time" name="time">
     <input type="text" name="type" placeholder="Тип">
     <textarea name="note" placeholder="Примечание"></textarea>
-    
+
     <label>Студент:
         <select name="student_id">
             <option value="">— Не выбран —</option>
@@ -20,7 +139,7 @@
             {% endfor %}
         </select>
     </label>
-    
+
     <label>Группа:
         <select name="group_id">
             <option value="">— Не выбрана —</option>
@@ -33,8 +152,76 @@
     <button type="submit">Добавить</button>
 </form>
 
+<hr>
+
+<h2 style="margin-top:40px;">Импорт графика учебного процесса</h2>
+<form method="POST" action="{{ url_for('admin.upload_reminder') }}" enctype="multipart/form-data"
+      style="margin-bottom: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 10px;">
+    <p>Загрузите PDF-файл...</p>
+    <input type="file" name="pdf_file" accept="application/pdf" required>
+    <button type="submit">Загрузить</button>
+</form>
+
 <h3>Существующие напоминания</h3>
-<table>
+
+<div class="toolbar">
+    <div class="field">
+        <label for="searchInput">Поиск</label>
+        <input type="text" id="searchInput" placeholder="Название, тип, студент, группа..." oninput="applyTableLogic()">
+    </div>
+
+    <div class="field">
+        <label for="filterType">Фильтр по типу</label>
+        <select id="filterType" onchange="applyTableLogic()">
+            <option value="">Все типы</option>
+            <option value="Не указан">Не указан</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label for="filterGroup">Фильтр по группе</label>
+        <select id="filterGroup" onchange="applyTableLogic()">
+            <option value="">Все группы</option>
+            <option value="Личное">Личное</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label for="sortBy">Сортировка</label>
+        <select id="sortBy" onchange="applyTableLogic()">
+            <option value="date">Дата</option>
+            <option value="time">Время</option>
+            <option value="title">Название</option>
+            <option value="type">Тип</option>
+            <option value="target">Студент/Группа</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label for="groupBySelect">Группировка</label>
+        <select id="groupBySelect" onchange="applyTableLogic()">
+            <option value="none">Без группировки</option>
+            <option value="date">По дате</option>
+            <option value="type">По типу</option>
+            <option value="group">По группе</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label>Направление</label>
+        <button type="button" class="toggle" id="sortDirBtn" onclick="toggleSortDirection()">↑ По возрастанию</button>
+    </div>
+
+    <div class="field">
+        <label>&nbsp;</label>
+        <button type="button" class="secondary" onclick="resetTableControls()">Сбросить</button>
+    </div>
+</div>
+
+
+<div class="sort-hint">Поиск, фильтр, сортировка и группировка работают одновременно.</div>
+
+<table id="remindersTable">
     <thead>
         <tr>
             <th>Дата</th>
@@ -42,26 +229,233 @@
             <th>Название</th>
             <th>Тип</th>
             <th>Примечание</th>
-            <th>Студент/Группа</th>
+            <th>Студент / Группа</th>
         </tr>
     </thead>
-    <tbody>
+    <tbody id="remindersBody">
         {% for r in reminders %}
-        <tr>
+        <tr class="reminder-row"
+            data-date="{{ r.date }}"
+            data-time="{{ r.time or '99:99' }}"
+            data-title="{{ r.title|lower }}"
+            data-type="{{ (r.type or 'Не указан')|lower }}"
+            data-group="{% if r.group %}{{ r.group.name }}{% else %}Личное{% endif %}"
+            data-target="{% if r.student %}{{ r.student.name }}{% if r.group %} {{ r.group.name }}{% endif %}{% elif r.group %}{{ r.group.name }}{% else %}Личное{% endif %}"
+            data-search="{{ (r.date|string) ~ ' ' ~ (r.time or '') ~ ' ' ~ r.title ~ ' ' ~ (r.type or '') ~ ' ' ~ (r.note or '') ~ ' ' ~ (r.student.name if r.student else '') ~ ' ' ~ (r.group.name if r.group else 'Личное') }}">
             <td>{{ r.date }}</td>
             <td>{{ r.time or '-' }}</td>
             <td>{{ r.title }}</td>
             <td>{{ r.type or '-' }}</td>
             <td>{{ r.note or '-' }}</td>
             <td>
-                {% if r.student_id %}
+                {% if r.student %}
                     {{ r.student.name }}
-                {% elif r.group_id %}
+                    {% if r.group %}
+                        <br><small>Группа: {{ r.group.name }}</small>
+                    {% endif %}
+                {% elif r.group %}
                     Все студенты группы {{ r.group.name }}
+                {% else %}
+                    — Личное
                 {% endif %}
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<div id="emptyState" class="empty-state" style="display:none;">
+    Ничего не найдено
+</div>
+
+
+
+<script>
+let sortAsc = true;
+
+function toggleSortDirection() {
+    sortAsc = !sortAsc;
+    const btn = document.getElementById('sortDirBtn');
+    btn.textContent = sortAsc ? '↑ По возрастанию' : '↓ По убыванию';
+    applyTableLogic();
+}
+
+function resetTableControls() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterType').value = '';
+    document.getElementById('filterGroup').value = '';
+    document.getElementById('sortBy').value = 'date';
+    document.getElementById('groupBySelect').value = 'none';
+    sortAsc = true;
+    document.getElementById('sortDirBtn').textContent = '↑ По возрастанию';
+    applyTableLogic();
+}
+
+function normalize(s) {
+    return (s || '')
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function compareDate(a, b) {
+    const da = a === '99:99' ? '9999-12-31' : a;
+    const db = b === '99:99' ? '9999-12-31' : b;
+    return new Date(da) - new Date(db);
+}
+
+function compareTime(a, b) {
+    const ta = a === '-' ? '99:99' : a;
+    const tb = b === '-' ? '99:99' : b;
+    return ta.localeCompare(tb, 'ru', { numeric: true });
+}
+
+function compareText(a, b) {
+    return normalize(a).localeCompare(normalize(b), 'ru', { numeric: true, sensitivity: 'base' });
+}
+
+function getSortValue(row, sortBy) {
+    switch (sortBy) {
+        case 'date':
+            return row.getAttribute('data-date') || '';
+        case 'time':
+            return row.getAttribute('data-time') || '';
+        case 'title':
+            return row.getAttribute('data-title') || '';
+        case 'type':
+            return row.getAttribute('data-type') || '';
+        case 'target':
+            return row.getAttribute('data-target') || '';
+        default:
+            return '';
+    }
+}
+
+function getGroupValue(row, groupBy) {
+    switch (groupBy) {
+        case 'date':
+            return row.getAttribute('data-date') || 'Без даты';
+        case 'type':
+            return row.getAttribute('data-type') || 'Не указан';
+        case 'group':
+            return row.getAttribute('data-group') || 'Личное';
+        default:
+            return '';
+    }
+}
+
+function rowMatchesFilters(row, search, typeFilter, groupFilter) {
+    const searchText = row.getAttribute('data-search') || '';
+    const typeVal = normalize(row.getAttribute('data-type'));
+    const groupVal = row.getAttribute('data-group') || 'Личное';
+
+    if (search && !normalize(searchText).includes(normalize(search))) return false;
+    if (typeFilter && typeVal !== normalize(typeFilter)) return false;
+    if (groupFilter && groupVal !== groupFilter) return false;
+
+    return true;
+}
+
+function applyTableLogic() {
+    const tbody = document.getElementById('remindersBody');
+    const emptyState = document.getElementById('emptyState');
+
+    const search = document.getElementById('searchInput').value;
+    const typeFilter = document.getElementById('filterType').value;
+    const groupFilter = document.getElementById('filterGroup').value;
+    const sortBy = document.getElementById('sortBy').value;
+    const groupBy = document.getElementById('groupBySelect').value;
+
+    let rows = Array.from(document.querySelectorAll('tr.reminder-row'))
+        .filter(row => rowMatchesFilters(row, search, typeFilter, groupFilter));
+
+    // сортировка
+    rows.sort((a, b) => {
+        const va = getSortValue(a, sortBy);
+        const vb = getSortValue(b, sortBy);
+
+        let res = 0;
+        if (sortBy === 'date') {
+            res = compareDate(va, vb);
+        } else if (sortBy === 'time') {
+            res = compareTime(va, vb);
+        } else {
+            res = compareText(va, vb);
+        }
+
+        return sortAsc ? res : -res;
+    });
+
+    tbody.innerHTML = '';
+
+    if (!rows.length) {
+        emptyState.style.display = 'block';
+        return;
+    } else {
+        emptyState.style.display = 'none';
+    }
+
+    // группировка
+    if (groupBy === 'none') {
+        rows.forEach(r => tbody.appendChild(r));
+        return;
+    }
+
+    const grouped = new Map();
+
+    rows.forEach(row => {
+        const key = getGroupValue(row, groupBy);
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(row);
+    });
+
+    const groupKeys = Array.from(grouped.keys()).sort((a, b) => compareText(a, b));
+
+    groupKeys.forEach(groupKey => {
+        const headerRow = document.createElement('tr');
+        headerRow.className = 'group-header';
+        headerRow.innerHTML = `<td colspan="6">${groupKey}</td>`;
+        tbody.appendChild(headerRow);
+
+        grouped.get(groupKey).forEach(row => tbody.appendChild(row));
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fillSelectsFromTable();
+    applyTableLogic();
+});
+
+function fillSelectsFromTable() {
+    const typeSelect = document.getElementById('filterType');
+    const groupSelect = document.getElementById('filterGroup');
+
+    const rows = Array.from(document.querySelectorAll('tr.reminder-row'));
+
+    const types = new Set();
+    const groups = new Set();
+
+    rows.forEach(row => {
+        const type = row.getAttribute('data-type');
+        const group = row.getAttribute('data-group') || 'Личное';
+        if (type) types.add(type);
+        if (group) groups.add(group);
+    });
+
+    Array.from(types).sort((a, b) => compareText(a, b)).forEach(type => {
+        const opt = document.createElement('option');
+        opt.value = type;
+        opt.textContent = type;
+        typeSelect.appendChild(opt);
+    });
+
+    Array.from(groups).sort((a, b) => compareText(a, b)).forEach(group => {
+        const opt = document.createElement('option');
+        opt.value = group;
+        opt.textContent = group;
+        groupSelect.appendChild(opt);
+    });
+}
+</script>
 {% endblock %}

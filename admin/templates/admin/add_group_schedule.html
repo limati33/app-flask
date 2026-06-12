@@ -1,9 +1,26 @@
 {% extends "admin/base.html" %}
 {% block title %}Добавить занятие{% endblock %}
 {% block content %}
-<h2>Добавить занятие для группы {{ group.name }}</h2>
+
+<h2>Добавить занятие</h2>
+
 <form method="POST">
-    <label>Предмет: <input type="text" name="subject" required></label><br>
+
+    <label>Группа:
+        <select name="group_id" required>
+            {% for g in groups %}
+            <option value="{{ g.id }}"
+                {% if group and g.id == group.id %}selected{% endif %}>
+                {{ g.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </label><br>
+
+    <label>Предмет:
+        <input type="text" name="subject" required>
+    </label><br>
+
     <label>Преподаватель:
         <select name="teacher_id">
             {% for t in teachers %}
@@ -11,7 +28,11 @@
             {% endfor %}
         </select>
     </label><br>
-    <label>Кабинет: <input type="text" name="room"></label><br>
+
+    <label>Кабинет:
+        <input type="text" name="room">
+    </label><br>
+
     <label>День недели:
         <select name="weekday">
             <option value="1">Понедельник</option>
@@ -23,8 +44,16 @@
             <option value="7">Воскресенье</option>
         </select>
     </label><br>
-    <label>Время начала: <input type="time" name="time_start" required></label><br>
-    <label>Время окончания: <input type="time" name="time_end" required></label><br>
+
+    <label>Время начала:
+        <input type="time" name="time_start" required>
+    </label><br>
+
+    <label>Время окончания:
+        <input type="time" name="time_end" required>
+    </label><br>
+
     <button type="submit">Добавить</button>
 </form>
+
 {% endblock %}

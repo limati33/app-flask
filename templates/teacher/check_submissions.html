@@ -4,119 +4,91 @@
 
 {% block content %}
 <style>
-    /* Основные стили таблицы */
-    .submissions-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background: white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .submissions-table th, .submissions-table td {
-        padding: 12px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-    .submissions-table th { background-color: #f8f9fa; }
-
-    /* Статусы */
-    .status-pending { color: #f39c12; font-weight: bold; }
-    .status-accepted { color: #27ae60; font-weight: bold; }
-    .status-rejected { color: #e74c3c; font-weight: bold; }
-
-    /* Кнопки */
-    .btn-view { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-    .btn-ok { background: #27ae60; color: white; padding: 6px 10px; text-decoration: none; border-radius: 4px; display: inline-block; }
-    .btn-no { background: #e74c3c; color: white; padding: 6px 10px; text-decoration: none; border-radius: 4px; display: inline-block; }
-    .download-link { 
-        display: inline-block;
-        background: #2c3e50; 
-        color: white; 
-        padding: 8px 15px; 
-        text-decoration: none; 
-        border-radius: 5px; 
-        margin-bottom: 15px;
-        font-size: 14px;
-    }
-    .download-link:hover { background: #1a252f; }
-
-    /* Модальное окно (Чистый CSS) */
-    .custom-modal {
-        display: none; 
-        position: fixed; 
-        z-index: 9999; 
-        left: 0; top: 0; width: 100%; height: 100%; 
-        background-color: rgba(0,0,0,0.8); 
-    }
-    .modal-content {
-        background-color: #fff;
-        margin: 2% auto;
-        padding: 25px;
-        border-radius: 12px;
-        width: 80%;
-        max-width: 900px;
-        max-height: 90vh;
-        overflow-y: auto;
-        position: relative;
-        animation: fadeIn 0.3s;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-
-    .close-modal {
-        position: absolute; right: 20px; top: 15px;
-        font-size: 30px; cursor: pointer; color: #aaa;
-    }
-    .close-modal:hover { color: #000; }
-
-    /* Стили контента внутри модалки */
-    .answer-box {
-        background: #f4f7f6;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 5px solid #3498db;
-        margin: 15px 0;
-        white-space: pre-wrap; /* Сохраняет переносы строк текста */
-    }
-    .preview-container {
-        text-align: center;
-        background: #eee;
-        padding: 10px;
-        border-radius: 8px;
-    }
-    .preview-img { max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-    iframe { border: none; border-radius: 5px; background: white; }
+    /* Стили таблицы и кнопок */
+    .submissions-table { width:100%; border-collapse:collapse; margin-top:20px; background:white; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    .submissions-table th, .submissions-table td { padding:12px; text-align:left; border-bottom:1px solid #ddd;}
+    .submissions-table th { background-color:#f8f9fa; cursor: pointer; user-select: none; }
+    .submissions-table th:hover { background-color:#e2e6ea; }
+    
+    .status-pending { color:#f39c12; font-weight:bold;}
+    .status-accepted { color:#27ae60; font-weight:bold;}
+    .status-rejected { color:#e74c3c; font-weight:bold;}
+    
+    .btn-view { background:#3498db; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; }
+    .btn-ok { background:#27ae60; color:white; padding:6px 10px; text-decoration:none; border-radius:4px; display:inline-block; }
+    .btn-no { background:#e74c3c; color:white; padding:6px 10px; text-decoration:none; border-radius:4px; display:inline-block; }
+    
+    /* Стили файлов и превью в модалке */
+    .files-section { margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+    .file-download-btn { display:inline-flex; align-items:center; background:#2c3e50; color:white; padding:8px 14px; text-decoration:none; border-radius:6px; margin: 5px; font-size:14px; transition: background 0.2s; }
+    .file-download-btn:hover { background:#1a252f; }
+    
+    .preview-container { text-align:center; background:#f9f9f9; padding:15px; border-radius:8px; border: 1px dashed #ccc; margin-bottom:15px;}
+    .preview-img { max-width:100%; max-height:450px; border-radius:6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); margin-top:8px; }
+    .preview-video { max-width:100%; max-height:400px; border-radius:6px; margin-top:8px; }
+    
+    /* Стили фильтров */
+    .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .filter-input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; min-width: 150px; }
+    
+    /* Стили модального окна */
+    .custom-modal { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8);}
+    .modal-content { background:#fff; margin:2% auto; padding:25px; border-radius:12px; width:80%; max-width:900px; max-height:90vh; overflow-y:auto; position:relative; animation:fadeIn 0.3s;}
+    @keyframes fadeIn { from{opacity:0; transform:translateY(-20px);} to{opacity:1; transform:translateY(0);} }
+    .close-modal { position:absolute; right:20px; top:15px; font-size:30px; cursor:pointer; color:#aaa; }
+    .close-modal:hover { color:#000; }
+    .answer-box { background:#f4f7f6; padding:15px; border-radius:8px; border-left:5px solid #3498db; margin:15px 0; white-space:pre-wrap; }
 </style>
 
 <div class="container">
     <h2>📩 Ответы студентов</h2>
 
-    <table class="submissions-table">
+    <div class="filter-bar">
+        <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Поиск по имени..." onkeyup="filterTable()">
+        
+        <select id="groupFilter" class="filter-input" onchange="filterTable()">
+            <option value="all">👥 Все группы</option>
+        </select>
+
+        <select id="statusFilter" class="filter-input" onchange="filterTable()">
+            <option value="all">📌 Все статусы</option>
+            <option value="pending">⏳ Ожидают проверки</option>
+            <option value="accepted">✅ Приняты</option>
+            <option value="rejected">❌ Отклонены</option>
+        </select>
+    </div>
+
+    <table class="submissions-table" id="submissionsTable">
         <thead>
             <tr>
-                <th>Студент</th>
-                <th>Задание</th>
-                <th>Дата сдачи</th>
-                <th>Статус</th>
+                <th onclick="sortTable(0)">Студент ⬍</th>
+                <th onclick="sortTable(1)">Группа ⬍</th> 
+                <th onclick="sortTable(2)">Задание ⬍</th>
+                <th onclick="sortTable(3)">Дата сдачи ⬍</th>
+                <th onclick="sortTable(4)">Статус ⬍</th>
                 <th>Просмотр</th>
                 <th>Действие</th>
             </tr>
         </thead>
         <tbody>
             {% for sub in submissions %}
-            <tr>
+            <tr data-status="{{ sub.status }}" 
+                data-group="{{ sub.student.group.name if sub.student.group else 'Без группы' }}">
+                
                 <td><strong>{{ sub.student.name }}</strong></td>
+                <td>{{ sub.student.group.name if sub.student.group else "-" }}</td>
                 <td>{{ sub.assignment.title }}</td>
-                <td>{{ sub.submitted_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                <td><span class="status-{{ sub.status }}">{{ sub.status }}</span></td>
-                <td>
-                    <button class="btn-view" onclick="openModal('{{ sub.id }}')">👁️ Посмотреть ответ</button>
+                <td data-timestamp="{{ sub.submitted_at.timestamp() }}">
+                    {{ sub.submitted_at.strftime('%d.%m.%Y %H:%M') }}
                 </td>
+                <td><span class="status-{{ sub.status }}">{{ sub.status }}</span></td>
+                <td><button class="btn-view" onclick="openModal('{{ sub.id }}')">👁️ Ответ</button></td>
                 <td>
                     {% if sub.status == 'pending' %}
                         <a href="{{ url_for('teacher.update_submission_status', sub_id=sub.id, status='accepted') }}" class="btn-ok" title="Принять">✅</a>
-                        <a href="{{ url_for('teacher.update_submission_status', sub_id=sub.id, status='rejected') }}" class="btn-no" title="Отклонить">❌</a>
+                        <button class="btn-no" onclick="openRejectModal('{{ sub.id }}')">❌</button>
                     {% else %}
-                        <small>Обработано</small>
+                        <small>Закрыто</small>
                     {% endif %}
                 </td>
             </tr>
@@ -124,36 +96,75 @@
             <div id="modal-{{ sub.id }}" class="custom-modal">
                 <div class="modal-content">
                     <span class="close-modal" onclick="closeModal('{{ sub.id }}')">&times;</span>
-                    
                     <h3>Проверка работы: {{ sub.student.name }}</h3>
                     <p><strong>Задание:</strong> {{ sub.assignment.title }}</p>
                     
                     <div class="answer-box">
                         <strong>Текст ответа:</strong><br>
-                        {{ sub.answer_text if sub.answer_text else "Студент не оставил комментария к работе." }}
+                        {{ sub.answer_text if sub.answer_text else "Нет комментария к работе." }}
                     </div>
+                    
+                    <div class="files-section">
+                        <h4>📎 Прикрепленные файлы:</h4>
 
-                    {% if sub.file_path %}
-                        <div class="file-section">
-                            <a href="{{ url_for('static', filename='submissions/' + sub.file_path) }}" 
-                               download class="download-link">
-                               📥 Скачать прикрепленный файл
-                            </a>
+                        {% if sub.files %}
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                {% for file in sub.files %}
+                                    {% set filename = file.split('/')[-1].split('\\')[-1] %}
+                                    {% set file_lower = filename.lower() %}
 
-                            <div class="preview-container">
-                                {% set ext = sub.file_path.split('.')[-1].lower() %}
-                                
-                                {% if ext in ['jpg', 'jpeg', 'png', 'gif'] %}
-                                    <img src="{{ url_for('static', filename='submissions/' + sub.file_path) }}" class="preview-img">
-                                {% elif ext == 'pdf' %}
-                                    <iframe src="{{ url_for('static', filename='submissions/' + sub.file_path) }}" 
-                                            width="100%" height="500px"></iframe>
-                                {% else %}
-                                    <p style="padding: 20px;">Предпросмотр для формата <b>.{{ ext }}</b> недоступен. Пожалуйста, скачайте файл для проверки.</p>
-                                {% endif %}
+                                    <div class="preview-container">
+                                        <div>
+                                            <a href="{{ url_for('static', filename='submissions/' ~ filename) }}"
+                                               download
+                                               class="file-download-btn">
+                                                💾 Скачать: {{ filename }}
+                                            </a>
+                                        </div>
+
+                                        {% if file_lower.endswith('.jpg')
+                                           or file_lower.endswith('.jpeg')
+                                           or file_lower.endswith('.png')
+                                           or file_lower.endswith('.gif')
+                                           or file_lower.endswith('.webp') %}
+
+                                            <div style="margin-top:10px;">
+                                                <img src="{{ url_for('static', filename='submissions/' ~ filename) }}"
+                                                     class="preview-img">
+                                            </div>
+
+                                        {% elif file_lower.endswith('.mp4')
+                                             or file_lower.endswith('.webm')
+                                             or file_lower.endswith('.ogg') %}
+
+                                            <div style="margin-top:10px;">
+                                                <video controls class="preview-video">
+                                                    <source src="{{ url_for('static', filename='submissions/' ~ filename) }}">
+                                                </video>
+                                            </div>
+
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
                             </div>
-                        </div>
-                    {% endif %}
+                        {% else %}
+                            <p style="color:#777;font-style:italic;">
+                                Файлы не прикреплены к этой работе.
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div id="reject-modal-{{ sub.id }}" class="custom-modal">
+                <div class="modal-content" style="max-width:500px;">
+                    <span class="close-modal" onclick="closeRejectModal('{{ sub.id }}')">&times;</span>
+                    <h3>Причина отклонения</h3>
+                    <form method="post" action="{{ url_for('teacher.update_submission_status', sub_id=sub.id, status='rejected') }}">
+                        <textarea name="comment" required placeholder="Напишите причину отклонения" style="width:100%; min-height:120px; padding:10px; border-radius:6px; border:1px solid #ccc; font-family:inherit;"></textarea>
+                        <br><br>
+                        <button type="submit" class="btn-no">Отклонить</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
@@ -162,23 +173,117 @@
 </div>
 
 <script>
-    function openModal(id) {
-        document.getElementById('modal-' + id).style.display = "block";
-        document.body.style.overflow = "hidden"; // Запрещаем прокрутку страницы под модалкой
+// --- ЛОГИКА МОДАЛЬНЫХ ОКОН ---
+function openModal(id){
+    document.getElementById('modal-' + id).style.display="block";
+    document.body.style.overflow="hidden";
+}
+function closeModal(id){
+    document.getElementById('modal-' + id).style.display="none";
+    document.body.style.overflow="auto";
+}
+window.onclick=function(event){
+    if(event.target.className==='custom-modal'){
+        event.target.style.display="none";
+        document.body.style.overflow="auto";
     }
+}
 
-    function closeModal(id) {
-        document.getElementById('modal-' + id).style.display = "none";
-        document.body.style.overflow = "auto"; // Возвращаем прокрутку
-    }
+// --- АВТОМАТИЧЕСКОЕ ЗАПОЛНЕНИЕ СПИСКА ГРУПП ---
+document.addEventListener("DOMContentLoaded", function() {
+    let groups = new Set();
+    let rows = document.querySelectorAll("#submissionsTable tbody tr");
+    
+    rows.forEach(row => {
+        let g = row.getAttribute("data-group");
+        if(g) groups.add(g);
+    });
 
-    // Закрытие при клике на серый фон
-    window.onclick = function(event) {
-        if (event.target.className === 'custom-modal') {
-            event.target.style.display = "none";
-            document.body.style.overflow = "auto";
+    let select = document.getElementById("groupFilter");
+    groups.forEach(g => {
+        let option = document.createElement("option");
+        option.value = g;
+        option.textContent = g;
+        select.appendChild(option);
+    });
+});
+
+// --- ФИЛЬТРАЦИЯ ---
+function filterTable() {
+    let search = document.getElementById("searchInput").value.toLowerCase();
+    let group = document.getElementById("groupFilter").value;
+    let status = document.getElementById("statusFilter").value;
+    
+    let rows = document.querySelectorAll("#submissionsTable tbody tr");
+
+    rows.forEach(row => {
+        let name = row.cells[0].innerText.toLowerCase(); 
+        let rowGroup = row.getAttribute("data-group");
+        let rowStatus = row.getAttribute("data-status");
+
+        let matchName = name.includes(search);
+        let matchGroup = (group === "all") || (rowGroup === group);
+        let matchStatus = (status === "all") || (rowStatus === status);
+
+        if (matchName && matchGroup && matchStatus) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+
+// --- СОРТИРОВКА ---
+function sortTable(n) {
+    let table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+    table = document.getElementById("submissionsTable");
+    switching = true;
+    dir = "asc"; 
+
+    while (switching) {
+        switching = false;
+        rows = table.rows;
+        
+        for (i = 1; i < (rows.length - 1); i++) {
+            shouldSwitch = false;
+            x = rows[i].getElementsByTagName("TD")[n];
+            y = rows[i + 1].getElementsByTagName("TD")[n];
+
+            let xVal = x.innerText.toLowerCase();
+            let yVal = y.innerText.toLowerCase();
+
+            if (n === 3) {
+                xVal = parseFloat(x.getAttribute("data-timestamp")) || 0;
+                yVal = parseFloat(y.getAttribute("data-timestamp")) || 0;
+            }
+
+            if (dir == "asc") {
+                if (xVal > yVal) { shouldSwitch = true; break; }
+            } else if (dir == "desc") {
+                if (xVal < yVal) { shouldSwitch = true; break; }
+            }
+        }
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            switching = true;
+            switchcount ++; 
+        } else {
+            if (switchcount == 0 && dir == "asc") {
+                dir = "desc";
+                switching = true;
+            }
         }
     }
-</script>
+}
 
+function openRejectModal(id){
+    document.getElementById('reject-modal-' + id).style.display = "block";
+    document.body.style.overflow = "hidden";
+}
+
+function closeRejectModal(id){
+    document.getElementById('reject-modal-' + id).style.display = "none";
+    document.body.style.overflow = "auto";
+}
+</script>
 {% endblock %}

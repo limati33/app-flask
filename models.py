@@ -4,6 +4,8 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# 
+
 class Group(db.Model):
     __tablename__ = "groups"
     id = db.Column(db.Integer, primary_key=True)
@@ -17,17 +19,17 @@ class Student(db.Model):
     __tablename__ = "students"
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(50), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)  # ФИО
+    name = db.Column(db.String(100), nullable=False)
     avatar = db.Column(db.String(200), nullable=True)
-    password = db.Column(db.String(200), nullable=False)  # хранить хэш
+    password = db.Column(db.String(200), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), nullable=False)
     reminders = db.relationship("Reminder", backref="student", lazy=True)
 
 class Teacher(db.Model):
     __tablename__ = "teachers"
     id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String(50), unique=True, nullable=False) # Добавлено
-    password = db.Column(db.String(200), nullable=False) # Добавлено
+    login = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     subject = db.Column(db.String(100), nullable=True)
     room = db.Column(db.String(20), nullable=True)
@@ -39,10 +41,10 @@ class Schedule(db.Model):
     __tablename__ = "schedule"
     id = db.Column(db.Integer, primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), nullable=False)
-    subject = db.Column(db.String(100), nullable=False)
+    subject = db.Column(db.Text, nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey("teachers.id"), nullable=False)
     room = db.Column(db.String(20), nullable=True)
-    weekday = db.Column(db.Integer, nullable=False)  # 1-7
+    weekday = db.Column(db.Integer, nullable=False)
     time_start = db.Column(db.String(10), nullable=False)
     time_end = db.Column(db.String(10), nullable=False)
 
@@ -58,12 +60,15 @@ class Announcement(db.Model):
 class Reminder(db.Model):
     __tablename__ = "reminders"
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), nullable=True)
     title = db.Column(db.String(200), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.String(10), nullable=True)
     type = db.Column(db.String(50), nullable=True)
     note = db.Column(db.Text, nullable=True)
+    group = db.relationship("Group", backref=db.backref("reminders", lazy=True))
+
 
 class Assignment(db.Model):
     __tablename__ = "assignments"
@@ -75,26 +80,34 @@ class Assignment(db.Model):
     deadline = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=True)
-    attachment = db.Column(db.String(255), nullable=True)
-    group = db.relationship("Group", backref="group_assignments") 
-    teacher = db.relationship("Teacher", backref="teacher_assignments")
-    student = db.relationship("Student", backref="personal_assignments")
-    submissions = db.relationship("Submission", backref="assignment", lazy=True)
+    attachment = db.Column(db.Text, nullable=True)
+    group = db.relationship("Group", backref="group_assignments", overlaps="group") 
+    teacher = db.relationship("Teacher", backref="teacher_assignments", overlaps="teacher")
+    student = db.relationship("Student", backref="personal_assignments", overlaps="student")
+
+class AssignmentFile(db.Model):
+    __tablename__ = "assignment_files"
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey("assignments.id"), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    filepath = db.Column(db.String(255), nullable=False)
+    assignment = db.relationship("Assignment", backref="files")
 
 class Submission(db.Model):
     __tablename__ = "submissions"
     id = db.Column(db.Integer, primary_key=True)
     assignment_id = db.Column(db.Integer, db.ForeignKey("assignments.id"), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
-    student = db.relationship("Student", backref="my_submissions")
-    assignment_obj = db.relationship("Assignment", backref="all_submissions") 
+    student = db.relationship("Student", backref="submissions_list")
+    assignment = db.relationship("Assignment", backref=db.backref("all_submissions", overlaps="submissions"))
     answer_text = db.Column(db.Text, nullable=True)
     file_path = db.Column(db.String(255), nullable=True)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default="pending")
+    teacher_comment = db.Column(db.Text, nullable=True)
 
 class Admin(db.Model):
     __tablename__ = "admins"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)  # хранить хэш
+    password = db.Column(db.String(200), nullable=False)

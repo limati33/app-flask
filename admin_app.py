@@ -3,6 +3,8 @@ from flask import Flask
 from models import db
 from admin import admin_bp
 from fcm import init_app  # ← импортируем
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///college.db'
