@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, flash, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, flash, render_template, request, redirect, url_for, session, jsonify, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from datetime import datetime, timedelta, date
@@ -12,6 +12,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import json
 from fcm import init_app as init_fcm
 from werkzeug.utils import secure_filename
+
 
 app = Flask(__name__)
 
@@ -34,6 +35,9 @@ db.init_app(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 init_fcm(app)
+
+app.config['AVATAR_UPLOAD_FOLDER'] = os.environ.get('AVATAR_UPLOAD_FOLDER', 'static/uploads/avatars')
+os.makedirs(app.config['AVATAR_UPLOAD_FOLDER'], exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'docx', 'zip', 'mp4', 'webm'}
 
@@ -63,6 +67,12 @@ def get_current_student():
     if sid is None:
         return None
     return Student.query.get(sid)
+@app.route("/uploads/avatars/<path:filename>")
+def uploaded_avatar(filename):
+    return send_from_directory(app.config["AVATAR_UPLOAD_FOLDER"], filename)
+@app.route("/healthz")
+def health():
+    return "ok"
 
 # --- Веб-часть (оставляем как есть) ---
 @app.route("/login", methods=["GET", "POST"])
@@ -306,6 +316,44 @@ def api_profile():
     except Exception as e:
         app.logger.exception("Error in /api/profile")
         return jsonify({"message": f"Server error: {str(e)}"}), 500
+
+@app.route("/api/profile/avatar", methods=["POST"])
+@jwt_required()
+def api_upload_profile_avatar():
+    student_id = _get_jwt_student_id()
+    if student_id is None:
+        return jsonify({"success": False, "message": "Invalid token identity"}), 401
+
+    student = Student.query.get(student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Student not found"}), 404
+
+    if "avatar" not in request.files:
+        return jsonify({"success": False, "message": "Файл не передан"}), 400
+
+    file = request.files["avatar"]
+
+    if not file.filename:
+        return jsonify({"success": False, "message": "Пустое имя файла"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"success": False, "message": "Недопустимый формат файла"}), 400
+
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    filename = secure_filename(f"student_{student.id}_{int(datetime.utcnow().timestamp())}.{ext}")
+    save_path = os.path.join(app.config["AVATAR_UPLOAD_FOLDER"], filename)
+    file.save(save_path)
+
+    student.avatar = filename
+    db.session.commit()
+
+    avatar_url = urljoin(request.host_url, f"uploads/avatars/{filename}")
+
+    return jsonify({
+        "success": True,
+        "message": "Фото профиля обновлено",
+        "avatar": avatar_url
+    })
 
 # --- API: Расписание ---
 @app.route("/api/schedule", methods=["GET"])

@@ -1,40 +1,45 @@
 # fcm.py
 import os
+import json
 import firebase_admin
 from firebase_admin import credentials, messaging
 
-FCM_SERVICE_FILENAME = "firebase-service-account.json"
-
 def init_app(app):
-    """
-    Инициализация Firebase Admin SDK.
-    Ищет firebase-service-account.json в корне проекта (рядом с admin_app.py).
-    """
-    # Путь: папка, где находится admin_app.py
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    fcm_path = os.path.join(base_dir, FCM_SERVICE_FILENAME)
+    try:
+        # 🔵 1. Берём из ENV (Render)
+        if "FIREBASE_CREDENTIALS" in os.environ:
+            cred_json = json.loads(os.environ["FIREBASE_CREDENTIALS"])
+            cred = credentials.Certificate(cred_json)
+            print("[fcm] Используется ENV credentials")
 
-    print(f"[fcm] Ищем файл: {fcm_path}")  # ← отладка
+        # 🟡 2. Локальный файл (если нет ENV)
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            fcm_path = os.path.join(base_dir, "firebase-service-account.json")
 
-    if os.path.exists(fcm_path):
-        try:
+            print(f"[fcm] Ищем файл: {fcm_path}")
+
+            if not os.path.exists(fcm_path):
+                raise FileNotFoundError("Firebase credentials not found")
+
             cred = credentials.Certificate(fcm_path)
-            if not firebase_admin._apps:
-                firebase_admin.initialize_app(cred)
-            app.config['FCM_ENABLED'] = True
-            print(f"[fcm] Firebase Admin УСПЕШНО инициализирован: {fcm_path}")
-        except Exception as e:
-            app.config['FCM_ENABLED'] = False
-            print(f"[fcm] ОШИБКА инициализации Firebase: {e}")
-    else:
-        app.config['FCM_ENABLED'] = False
-        print(f"[fcm] ФАЙЛ НЕ НАЙДЕН: {fcm_path} — FCM ОТКЛЮЧЁН")
+            print("[fcm] Используется локальный файл")
 
-#Работает admin_app.py -> admin/routes.py
+        # init Firebase
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+
+        app.config['FCM_ENABLED'] = True
+        print("[fcm] Firebase Admin инициализирован")
+
+    except Exception as e:
+        app.config['FCM_ENABLED'] = False
+        print(f"[fcm] FCM ERROR: {e}")
+
+
 def send_new_announcement_push(title: str, content: str):
     try:
         if not firebase_admin._apps:
-            print("[fcm] Firebase Admin SDK не инициализирован — пуш пропущен")
             return None
 
         message = messaging.Message(
@@ -44,49 +49,42 @@ def send_new_announcement_push(title: str, content: str):
             ),
             topic="announcements"
         )
-        print(f"[fcm] Отправка FCM: title='{title}'")
-        resp = messaging.send(message)
-        print(f"[fcm] УСПЕШНО отправлено! message_id: {resp}")
-        return resp
+
+        return messaging.send(message)
+
     except Exception as e:
-        print(f"[fcm] ОШИБКА отправки FCM: {e}")
-        import traceback; traceback.print_exc()
+        print(f"[fcm] ERROR announcement: {e}")
         return None
 
-#Не работает teacher/teacher_routes.py
+
 def send_personal_assignment_push(student_id, title):
-    """Отправляет уведомление конкретному студенту на его тему"""
     try:
         if not firebase_admin._apps:
-            print("[fcm] Firebase не инициализирован — пуш отменен")
             return None
 
-        # Топик должен быть уникальным для каждого студента
-        topic_name = f"student_{student_id}"
+        topic = f"student_{student_id}"
 
         message = messaging.Message(
             notification=messaging.Notification(
                 title="📝 Новая отработка",
                 body=f"Назначено задание: {title}"
             ),
-            topic=topic_name
+            topic=topic
         )
-        
-        resp = messaging.send(message)
-        print(f"[fcm] Успешно отправлено студенту {student_id}: {resp}")
-        return resp
+
+        return messaging.send(message)
+
     except Exception as e:
-        print(f"[fcm] Ошибка отправки личного пуша: {e}")
+        print(f"[fcm] ERROR personal push: {e}")
         return None
 
-#Не работает teacher/teacher_routes.py
+
 def send_submission_status_push(student_id, assignment_title, status, comment=None):
     try:
         if not firebase_admin._apps:
-            print("[fcm] Firebase не инициализирован — пуш отменен")
             return None
 
-        topic_name = f"student_{student_id}"
+        topic = f"student_{student_id}"
 
         if status == "accepted":
             title = "✅ Работа принята"
@@ -102,13 +100,11 @@ def send_submission_status_push(student_id, assignment_title, status, comment=No
                 title=title,
                 body=body
             ),
-            topic=topic_name
+            topic=topic
         )
 
-        resp = messaging.send(message)
-        print(f"[fcm] Пуш о статусе отправлен студенту {student_id}")
-        return resp
+        return messaging.send(message)
 
     except Exception as e:
-        print(f"[fcm] Ошибка отправки пуша статуса: {e}")
+        print(f"[fcm] ERROR status push: {e}")
         return None
